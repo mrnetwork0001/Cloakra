@@ -18,8 +18,18 @@ Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 ## Status
 
 Scaffold only. No contracts compiled, no SDK wired, no transactions executed yet.
-Contract and transaction fields in `strk20.json` are marked `pending` until the
-router is deployed to Starknet Mainnet and real transaction hashes are captured.
+`strk20.json` is present at the root with empty fields; each is filled in as it
+comes to exist (mainnet transactions, deployed contracts, demo video, demo URL).
+
+## Getting started
+
+```bash
+cp .env.example .env   # then add your own Alchemy key
+```
+
+Mainnet is `SN_MAIN`. The canonical STRK20 privacy pool is
+[`0x040337b1…ffe812a`](https://voyager.online/contract/0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812a).
+`.env` is gitignored — never commit an RPC key.
 
 ## Layout
 
