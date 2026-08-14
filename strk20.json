@@ -1,0 +1,57 @@
+{
+  "name": "Cloakra",
+  "description": "Autonomous Shielded Capital Allocation OS on Starknet Mainnet powered by STRK20 Privacy Pool",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "network": "starknet-mainnet",
+  "strk20_sdk_version": "0.14.2",
+  "contracts": {
+    "strk20_privacy_pool": {
+      "address": "",
+      "status": "pending",
+      "note": "Fill with the canonical STRK20 Privacy Pool address published by the sprint organizers."
+    },
+    "cloakra_router": {
+      "address": "",
+      "status": "pending",
+      "note": "Fill after cloakra_pool_router.cairo is declared + deployed to mainnet (Phase 1)."
+    }
+  },
+  "mainnet_transactions": [
+    {
+      "type": "shielded_grant_deposit",
+      "module": "StealthGrant",
+      "tx_hash": "",
+      "status": "pending",
+      "voyager_url": ""
+    },
+    {
+      "type": "ghost_bounty_payout",
+      "module": "GhostBounty",
+      "tx_hash": "",
+      "status": "pending",
+      "voyager_url": ""
+    },
+    {
+      "type": "stealth_split_settlement",
+      "module": "StealthSplit",
+      "tx_hash": "",
+      "status": "pending",
+      "voyager_url": ""
+    }
+  ],
+  "viewing_keys_enabled": true,
+  "modules": [
+    "StealthGrant",
+    "GhostBounty",
+    "StealthSplit",
+    "SelectiveViewingKeys"
+  ],
+  "repository": "https://github.com/mrnetwork0001/Cloakra",
+  "author": "Ifeanyichukwu Onwo (mrnetwork)",
+  "hackathon": {
+    "event": "STRK20 Private Sprint",
+    "starts": "2026-08-14",
+    "deadline": "2026-08-31T23:59:00Z"
+  }
+}

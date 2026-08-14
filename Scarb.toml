@@ -1,0 +1,19 @@
+[package]
+name = "cloakra"
+version = "0.1.0"
+edition = "2024_07"
+license = "Apache-2.0"
+description = "Autonomous Shielded Capital Allocation OS on Starknet Mainnet (STRK20 Privacy Pool)"
+
+[dependencies]
+starknet = "2.8.2"
+
+[dev-dependencies]
+snforge_std = "0.31.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[scripts]
+test = "snforge test"

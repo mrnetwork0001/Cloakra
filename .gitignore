@@ -1,0 +1,25 @@
+# Cairo / Scarb
+target/
+.snfoundry_cache/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# Env & secrets — never commit mainnet keys
+.env
+.env.*
+!.env.example
+*.key
+keystore/
+viewing_keys/
+
+# OS
+.DS_Store
+
+# Private planning docs — kept local, not published
+CLAUDE_CLOAKRA.md
+CLOAKRA_PROJECT_SPEC.md
