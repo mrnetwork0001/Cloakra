@@ -13,6 +13,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.key
 keystore/
 viewing_keys/
@@ -23,6 +24,7 @@ viewing_keys/
 # Private planning docs — kept local, not published
 CLAUDE_CLOAKRA.md
 CLOAKRA_PROJECT_SPEC.md
+CLOAKRA_BUILD_DAYS.md
 
 # Vendored docs mirror (strk20-by-example.org) — local build context only
 docs/strk20-llms-full.txt
