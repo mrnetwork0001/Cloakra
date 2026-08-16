@@ -77,6 +77,8 @@ Each mainnet-affecting action is executed only with the developer's explicit go 
 
 Phase 1 note (2026-08-16): a 15-agent adversarial review confirmed 10 unique findings, all fixed before commit — the chain guard now reads the wallet's chain (`walletV6.requestChainId`) and compares felts numerically; in-wallet account/network switches are followed via `account.onChange`; declining a chain switch or balance read is handled as a routine outcome (`USER_REFUSED_OP`), not a session teardown; connect has a cancel path and a disconnect exists; dust balances render as `< 0.0001` instead of `0`; viewing-key/compliance wording removed from public copy.
 
+Phase 1 manual verification (2026-08-16): connect ✅ · capability detection ✅ (balance button shown for Ready) · unregistered-account state ✅ (typed NOT_REGISTERED handled, no popup by design). Wrong-network banner untestable — the user's Ready build would not switch to Sepolia; the guard stays as defensive code. Balance-consent + decline tests deferred until the account registers via the first shield.
+
 ## 10. Open items to re-verify at build time
 
 - get-starknet `next` moved 6.0.3 → 6.0.4 — check the changelog before any upgrade; 6.0.3 pins hold for now.
