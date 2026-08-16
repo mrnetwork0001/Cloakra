@@ -81,7 +81,7 @@ Phase 1 note (2026-08-16): a 15-agent adversarial review confirmed 10 unique fin
 
 - get-starknet `next` moved 6.0.3 → 6.0.4 — check the changelog before any upgrade; 6.0.3 pins hold for now.
 - Fee UX: wallet flows sponsor gas but not pool fees; paymaster-based fee estimation still being designed — re-check at Phase 2.
-- Exact consent behavior of `strk20Balances` in the current Ready extension build — confirm before designing the balance panel around it.
+- ~~Exact consent behavior of `strk20Balances` in the current Ready extension build~~ **Confirmed 2026-08-16 against Ready on mainnet:** an unregistered account gets an instant typed `NOT_REGISTERED` (code 118) rejection *before* any consent prompt. The UI now treats it as an informational state ("registers automatically on first shield"), not an error. Consent-prompt behavior for a *registered* account still unobserved — verify right after the Phase 2 shield.
 - Xverse dapp-facing Wallet API status (would widen wallet support beyond Ready).
 - Whether one `strk20InvokeTransaction` batch pays one flat pool fee or one per action — read from the pool / test with the smallest split first; drives StealthSplit's fee line.
 

@@ -87,15 +87,28 @@ export function formatTokenAmount(raw: bigint, decimals = 18, places = 4): strin
   return out;
 }
 
+export type WalletErrorKind = "refused" | "not_registered" | "unknown";
+
+/**
+ * Classify a wallet-api error. Errors arrive as plain {code, message} objects
+ * (spec-typed) or as Error instances, so match on both. Codes from
+ * starknet-types-0103 wallet-api/errors.d.ts: NOT_REGISTERED = 118.
+ */
+export function walletErrorKind(err: unknown): WalletErrorKind {
+  const e = err as { code?: unknown; message?: unknown } | null;
+  const code = typeof e?.code === "number" ? e.code : undefined;
+  const message =
+    typeof e === "object" && e !== null && "message" in e
+      ? String(e.message)
+      : String(err);
+  if (code === 118 || /NOT_REGISTERED/.test(message)) return "not_registered";
+  if (/refus|reject|denied|abort/i.test(message)) return "refused";
+  return "unknown";
+}
+
 /** True when an unknown error represents the user declining in the wallet. */
 export function isUserRefusal(err: unknown): boolean {
-  // The wallet-api typed rejection is USER_REFUSED_OP, and it may arrive as a
-  // plain {code, message} object rather than an Error instance.
-  const message =
-    typeof err === "object" && err !== null && "message" in err
-      ? String((err as { message: unknown }).message)
-      : String(err);
-  return /refus|reject|denied|abort/i.test(message);
+  return walletErrorKind(err) === "refused";
 }
 
 /**
