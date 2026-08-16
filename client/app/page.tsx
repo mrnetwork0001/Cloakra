@@ -15,10 +15,10 @@ const MODULES = [
       "Bounty payouts to a researcher's shielded balance, so disclosing a vulnerability does not deanonymize the wallet that gets paid.",
   },
   {
-    name: "Viewing Keys",
-    status: "Day 10",
+    name: "StealthGrant",
+    status: "Day 12",
     blurb:
-      "Scoped, encrypted key export — an auditor verifies one grant round or tax year without any of it becoming public.",
+      "Shielded grant disbursement over the same rails — the grantee list and per-project amounts stay inside the pool.",
   },
 ] as const;
 
@@ -34,9 +34,9 @@ export default function Home() {
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-white/60">
           Shielded capital allocation. Grants, bounties, and contributor payouts
-          settled through the STRK20 privacy pool — so the amounts an
-          organization pays out stay private, while an auditor can still verify
-          them.
+          settled through the STRK20 privacy pool — who receives and how much
+          stays private. What stays public: the org&apos;s deposits into the
+          pool, and any withdrawal back to a public wallet.
         </p>
       </header>
 

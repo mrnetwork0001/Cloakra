@@ -2,7 +2,7 @@
 
 **Shielded capital allocation on Starknet Mainnet, powered by the STRK20 Privacy Pool.**
 
-Grants, bug bounties, and contributor payouts are the most identity-revealing transactions an organization makes. Paying a security researcher publicly links their wallet to the disclosure. Splitting a team grant on-chain shows every contributor what everyone else was paid. Cloakra moves those flows into the STRK20 pool — and keeps them auditable.
+Grants, bug bounties, and contributor payouts are the most identity-revealing transactions an organization makes. Paying a security researcher publicly links their wallet to the disclosure. Splitting a team grant on-chain shows every contributor what everyone else was paid. Cloakra settles those flows inside the STRK20 pool — who receives and how much stays private; the pool's public legs stay public.
 
 Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 
@@ -14,12 +14,21 @@ Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 | :--- | :--- |
 | **StealthSplit** | One funded note split atomically into per-contributor shielded balances. Co-workers cannot read each other's allocation. |
 | **GhostBounty** | Bounty payouts to a researcher's shielded balance, so disclosing a vulnerability does not deanonymize the wallet that receives payment. |
-| **Selective Viewing Keys** | Scoped, encrypted key export — an auditor verifies one grant round or tax year without any of it becoming public. |
 | **StealthGrant** | Shielded grant disbursement over the same rails. |
+
+## What's private, what isn't
+
+| Private (inside the pool) | Public (visible onchain) |
+| :--- | :--- |
+| Who receives a split, bounty, or grant | The org's deposits into the pool (address + amount) |
+| Per-recipient amounts | Any withdrawal to a public wallet (address + amount) |
+| The link between payer and payee | That an address interacted with the pool, and when |
+
+The privacy is the broken *link* between the org's deposit and a recipient's withdrawal — not invisibility of the public legs. Recipients need a privacy-enabled wallet ([Ready](https://www.ready.co)); registration happens automatically in-wallet on first use.
 
 ## Status
 
-**Day 1 of 16.** The dapp shell runs: wallet discovery, connection, and a mainnet chain guard. No pool transactions yet — `strk20.json` fields fill in as they come to exist.
+**Day 2 of 16.** Wallet discovery + connection, mainnet chain guard, STRK20 capability detection (version query — never a data probe), and a consent-gated shielded-balance read. No pool transactions yet — `strk20.json` fields fill in as they come to exist. Integration plan: [STRK20_INTEGRATION_PLAN.md](STRK20_INTEGRATION_PLAN.md).
 
 Cloakra integrates the pool through **`WalletAccountV6`** in starknet.js, which exposes the STRK20 privacy actions (`strk20Balances`, `strk20PrepareInvoke`, `strk20InvokeTransaction`) directly. Because `strk20InvokeTransaction` accepts an *array* of actions settled in one transaction, StealthSplit's atomic one-note-to-many-recipients payout needs no custom Cairo contract. Every operation is signed by the user's own wallet; no key material is ever held server-side.
 
@@ -64,7 +73,6 @@ Cloakra/
 
 - [x] Public repo, Apache 2.0
 - [ ] 3 live mainnet transaction hashes recorded in `strk20.json`
-- [ ] Selective viewing key export working end to end
 - [ ] Live public web demo
 - [ ] 3-minute video showcase (human voiceover)
 
