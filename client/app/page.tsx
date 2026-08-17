@@ -1,4 +1,4 @@
-import WalletPanel from "@/components/WalletPanel";
+import AppShell from "@/components/AppShell";
 import { RPC_URL } from "@/lib/config";
 
 const MODULES = [
@@ -41,7 +41,7 @@ export default function Home() {
       </header>
 
       <div className="mt-12">
-        <WalletPanel />
+        <AppShell />
       </div>
 
       {!RPC_URL ? (

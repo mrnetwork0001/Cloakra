@@ -35,7 +35,19 @@ type Status =
     }
   | { kind: "error"; message: string };
 
-export default function WalletPanel() {
+/** What the rest of the app needs to act on behalf of the user. */
+export interface WalletSession {
+  account: WalletAccountV6;
+  address: string;
+  strk20: boolean;
+  wrongChain: boolean;
+}
+
+export default function WalletPanel({
+  onSession,
+}: {
+  onSession?: (session: WalletSession | null) => void;
+}) {
   const [wallets, setWallets] = useState<readonly DiscoveredWallet[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [switching, setSwitching] = useState(false);
@@ -43,6 +55,9 @@ export default function WalletPanel() {
   // Latest-wins token: bumping it makes any in-flight connect attempt stale,
   // so a hung wallet popup can be cancelled and can't overwrite a later state.
   const attemptRef = useRef(0);
+  // Same idea for async chain-id reads: out-of-order resolutions must not
+  // clobber a newer value (connect / onChange / switch all read it).
+  const chainSeqRef = useRef(0);
   const unsubChangeRef = useRef<(() => void) | null>(null);
 
   // Extensions inject asynchronously, so seed once then follow the store.
@@ -59,6 +74,21 @@ export default function WalletPanel() {
     [],
   );
 
+  // Report the session upward whenever it materially changes.
+  useEffect(() => {
+    if (!onSession) return;
+    onSession(
+      status.kind === "connected"
+        ? {
+            account: status.account,
+            address: status.address,
+            strk20: status.strk20,
+            wrongChain: !sameFelt(status.chainId, SN_MAIN),
+          }
+        : null,
+    );
+  }, [status, onSession]);
+
   const onConnect = useCallback(async (wallet: DiscoveredWallet) => {
     const attempt = ++attemptRef.current;
     unsubChangeRef.current?.();
@@ -71,8 +101,10 @@ export default function WalletPanel() {
       const account = await connectWallet(wallet);
       // Guard on the WALLET's chain, not account.provider.getChainId() —
       // the provider reports our own RPC, which is always mainnet here.
+      const seq = ++chainSeqRef.current;
       const chainId = await getWalletChainId(wallet);
       if (attemptRef.current !== attempt) return; // cancelled or superseded
+      if (chainSeqRef.current !== seq) return; // a newer chain read exists
       setStatus({
         kind: "connected",
         account,
@@ -86,7 +118,9 @@ export default function WalletPanel() {
       // current; the chain comes from the wallet-api query.
       unsubChangeRef.current = account.onChange(() => {
         void (async () => {
+          const seq = ++chainSeqRef.current;
           const nextChainId = await getWalletChainId(wallet).catch(() => null);
+          if (chainSeqRef.current !== seq) return; // a newer read superseded us
           setStatus((prev) =>
             prev.kind === "connected"
               ? {
@@ -126,10 +160,13 @@ export default function WalletPanel() {
     setSwitchError(null);
     try {
       const ok = await status.account.switchStarknetChain(SN_MAIN);
+      const seq = ++chainSeqRef.current;
       const chainId = await getWalletChainId(status.wallet);
-      setStatus((prev) =>
-        prev.kind === "connected" ? { ...prev, chainId } : prev,
-      );
+      if (chainSeqRef.current === seq) {
+        setStatus((prev) =>
+          prev.kind === "connected" ? { ...prev, chainId } : prev,
+        );
+      }
       if (!ok && !sameFelt(chainId, SN_MAIN)) {
         setSwitchError("The wallet declined the network switch.");
       }

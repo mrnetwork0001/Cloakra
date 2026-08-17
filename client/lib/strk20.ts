@@ -7,9 +7,17 @@
  * called on an explicit user action.
  */
 
-import { walletV6, type WalletAccountV6 } from "starknet";
+import {
+  walletV6,
+  type WalletAccountV6,
+  type STRK20_ACTION,
+  type STRK20_DEPOSIT_ACTION,
+  type STRK20_TRANSFER_ACTION,
+  type STRK20_WITHDRAW_ACTION,
+} from "starknet";
 import type { DiscoveredWallet } from "./wallet";
 import { STRK_TOKEN_ADDRESS } from "./config";
+import { getProvider } from "./pool";
 
 /** Wallet-API version at which STRK20 actions exist (spec v0.10.x). */
 const STRK20_MIN_WALLET_API: readonly [number, number] = [0, 10];
@@ -73,6 +81,18 @@ export async function readShieldedBalances(
   }));
 }
 
+/**
+ * Exact, always-parseable decimal string (full precision, no "<" indicator).
+ * Use for values that flow back into an input field; use formatTokenAmount
+ * for display copy.
+ */
+export function formatTokenAmountExact(raw: bigint, decimals = 18): string {
+  const base = 10n ** BigInt(decimals);
+  const whole = raw / base;
+  const frac = (raw % base).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : whole.toString();
+}
+
 /** Format a raw 18-decimal amount for display, e.g. 12.3456 STRK. */
 export function formatTokenAmount(raw: bigint, decimals = 18, places = 4): string {
   const base = 10n ** BigInt(decimals);
@@ -124,3 +144,114 @@ export function sameFelt(a: string, b: string): boolean {
 }
 
 export const sameAddress = sameFelt;
+
+/**
+ * Parse a user-typed decimal amount ("12.5") into base units. Throws with a
+ * user-showable message on bad input.
+ */
+export function parseTokenAmount(input: string, decimals = 18): bigint {
+  const trimmed = input.trim();
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) {
+    throw new Error("Enter a plain number, like 12 or 12.5.");
+  }
+  const [whole, frac = ""] = trimmed.split(".");
+  if (frac.length > decimals) {
+    throw new Error(`At most ${decimals} decimal places.`);
+  }
+  const raw =
+    BigInt(whole) * 10n ** BigInt(decimals) +
+    BigInt(frac.padEnd(decimals, "0") || "0");
+  if (raw <= 0n) throw new Error("Amount must be greater than zero.");
+  return raw;
+}
+
+const toFelt = (raw: bigint): string => "0x" + raw.toString(16);
+
+/** Shield: deposit STRK into the pool. Registration is automatic in-wallet. */
+export function buildShield(raw: bigint): STRK20_DEPOSIT_ACTION {
+  return { type: "deposit", token: STRK_TOKEN_ADDRESS, amount: toFelt(raw) };
+}
+
+/** Private transfer inside the pool to a registered recipient. */
+export function buildTransfer(
+  recipient: string,
+  raw: bigint,
+): STRK20_TRANSFER_ACTION {
+  return {
+    type: "transfer",
+    token: STRK_TOKEN_ADDRESS,
+    amount: toFelt(raw),
+    recipient,
+  };
+}
+
+/** Atomic split: one batch of transfers, settled in a single transaction. */
+export function buildSplit(
+  recipients: { address: string; raw: bigint }[],
+): STRK20_ACTION[] {
+  return recipients.map((r) => buildTransfer(r.address, r.raw));
+}
+
+/** Unshield: withdraw back to a public address (this leg is public). */
+export function buildWithdraw(
+  recipient: string,
+  raw: bigint,
+): STRK20_WITHDRAW_ACTION {
+  return {
+    type: "withdraw",
+    token: STRK_TOKEN_ADDRESS,
+    amount: toFelt(raw),
+    recipient,
+  };
+}
+
+export type SubmitOutcome =
+  /** Accepted AND execution SUCCEEDED — the only true success. */
+  | { kind: "confirmed"; txHash: string }
+  /** Accepted on-chain but execution REVERTED — no value moved. */
+  | { kind: "reverted"; txHash: string }
+  /** waitForTransaction diagnosed a dead tx (mempool eviction etc.). */
+  | { kind: "failed"; txHash: string; message: string }
+  /** Our wait ceiling elapsed — genuinely unknown, not failed. */
+  | { kind: "submitted"; txHash: string };
+
+const WAIT_TIMEOUT = Symbol("wait-timeout");
+
+/**
+ * Execute STRK20 actions through the wallet, then wait for the receipt with a
+ * ceiling. Three traps this must not fall into:
+ * - waitForTransaction RESOLVES for REVERTED txs (default errorStates is
+ *   empty — finality only), so the receipt's execution status must be checked
+ *   or a failed deposit reads as success;
+ * - it REJECTS with terminal diagnoses (mempool eviction) that must not be
+ *   conflated with our benign timeout;
+ * - relayed txs can be slow to appear, so the wait needs a ceiling at all.
+ */
+export async function executeStrk20(
+  account: WalletAccountV6,
+  actions: STRK20_ACTION[],
+  waitMs = 90_000,
+): Promise<SubmitOutcome> {
+  const { transaction_hash: txHash } = await account.strk20InvokeTransaction(actions);
+
+  const settled = await Promise.race([
+    getProvider()
+      .waitForTransaction(txHash, { retryInterval: 3_000 })
+      .then((receipt) => ({ ok: true as const, receipt }))
+      .catch((error: unknown) => ({ ok: false as const, error })),
+    new Promise<typeof WAIT_TIMEOUT>((resolve) =>
+      setTimeout(() => resolve(WAIT_TIMEOUT), waitMs),
+    ),
+  ]);
+
+  if (settled === WAIT_TIMEOUT) return { kind: "submitted", txHash };
+  if (!settled.ok) {
+    const e = settled.error as { message?: unknown } | null;
+    return {
+      kind: "failed",
+      txHash,
+      message: String(e && "message" in (e as object) ? e.message : settled.error),
+    };
+  }
+  return { kind: settled.receipt.isSuccess() ? "confirmed" : "reverted", txHash };
+}
