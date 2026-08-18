@@ -107,24 +107,68 @@ export function formatTokenAmount(raw: bigint, decimals = 18, places = 4): strin
   return out;
 }
 
-export type WalletErrorKind = "refused" | "not_registered" | "unknown";
+export type WalletErrorKind =
+  | "refused"
+  | "not_registered"
+  | "insufficient_private"
+  | "unknown";
+
+/** Human-readable message from any wallet/lib error shape. */
+export function walletErrorMessage(err: unknown): string {
+  const e = err as { message?: unknown } | null;
+  return typeof e === "object" && e !== null && "message" in e
+    ? String(e.message)
+    : String(err);
+}
 
 /**
  * Classify a wallet-api error. Errors arrive as plain {code, message} objects
  * (spec-typed) or as Error instances, so match on both. Codes from
- * starknet-types-0103 wallet-api/errors.d.ts: NOT_REGISTERED = 118.
+ * starknet-types-0103 wallet-api/errors.d.ts: NOT_REGISTERED = 118,
+ * INSUFFICIENT_PRIVATE_BALANCE = 119. "abort" is deliberately NOT treated as
+ * refusal — AbortError-style infrastructure timeouts would misreport a
+ * possibly-broadcast tx as declined and invite a duplicate submit.
  */
 export function walletErrorKind(err: unknown): WalletErrorKind {
-  const e = err as { code?: unknown; message?: unknown } | null;
+  const e = err as { code?: unknown } | null;
   const code = typeof e?.code === "number" ? e.code : undefined;
-  const message =
-    typeof e === "object" && e !== null && "message" in e
-      ? String(e.message)
-      : String(err);
+  const message = walletErrorMessage(err);
   if (code === 118 || /NOT_REGISTERED/.test(message)) return "not_registered";
-  if (/refus|reject|denied|abort/i.test(message)) return "refused";
+  if (code === 119 || /INSUFFICIENT_PRIVATE_BALANCE/.test(message))
+    return "insufficient_private";
+  if (/refus|reject|denied/i.test(message)) return "refused";
   return "unknown";
 }
+
+/** The Stark field prime — felts live below this; hashes and EVM junk may not. */
+const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
+
+/**
+ * Validate a user-typed Starknet address and return it normalized
+ * ("0x" + lowercase hex, no zero-padding) so string comparison is safe on the
+ * result. Throws a user-showable message otherwise.
+ */
+export function parseAddress(input: string): string {
+  const trimmed = input.trim();
+  if (!/^0x[0-9a-fA-F]{1,64}$/.test(trimmed)) {
+    throw new Error("Enter a Starknet address (0x…).");
+  }
+  const value = BigInt(trimmed);
+  if (value >= FIELD_PRIME) {
+    throw new Error(
+      "Not a valid Starknet address — this looks like a transaction hash.",
+    );
+  }
+  if (value === 0n) throw new Error("The zero address is not a recipient.");
+  return "0x" + value.toString(16);
+}
+
+/** Shared per-panel submit lifecycle. */
+export type PanelPhase =
+  | { kind: "form" }
+  | { kind: "submitting" }
+  | { kind: "done"; outcome: SubmitOutcome }
+  | { kind: "error"; message: string };
 
 /** True when an unknown error represents the user declining in the wallet. */
 export function isUserRefusal(err: unknown): boolean {

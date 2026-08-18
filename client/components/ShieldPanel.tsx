@@ -8,21 +8,19 @@ import {
   formatTokenAmount,
   formatTokenAmountExact,
   parseTokenAmount,
+  sameFelt,
   walletErrorKind,
-  type SubmitOutcome,
+  walletErrorMessage,
+  type PanelPhase,
 } from "@/lib/strk20";
 import { getPoolFee, getPublicStrkBalance } from "@/lib/pool";
-import { voyagerTx } from "@/lib/config";
+import { usePoolFee } from "@/lib/hooks";
+import { COPY } from "@/lib/copy";
+import TxOutcome from "./TxOutcome";
 
 /** Kept aside for gas on Max — wallet flows sponsor gas for pool ops, but the
  * ERC-20 approve leg may not be covered on every build. */
 const GAS_RESERVE = 10n ** 18n; // 1 STRK
-
-type Phase =
-  | { kind: "form" }
-  | { kind: "submitting" }
-  | { kind: "done"; outcome: SubmitOutcome }
-  | { kind: "error"; message: string };
 
 export default function ShieldPanel({
   account,
@@ -34,20 +32,20 @@ export default function ShieldPanel({
   disabled?: boolean;
 }) {
   const [amount, setAmount] = useState("");
-  const [fee, setFee] = useState<bigint | null>(null);
   const [publicBalance, setPublicBalance] = useState<bigint | null>(null);
-  const [phase, setPhase] = useState<Phase>({ kind: "form" });
+  const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
+  const fee = usePoolFee(phase.kind === "form");
 
-  // Public reads over our own RPC — no wallet involvement, no consent needed.
-  // Re-runs on phase changes so returning from an outcome refreshes both.
+  // Public balance over our own RPC — no wallet involvement, no consent
+  // needed. Refreshes when the form is (re)shown; keeps last good on failure.
   useEffect(() => {
+    if (phase.kind !== "form") return;
     let stale = false;
-    getPoolFee()
-      .then((f) => !stale && setFee(f))
-      .catch(() => !stale && setFee(null));
     getPublicStrkBalance(address)
       .then((b) => !stale && setPublicBalance(b))
-      .catch(() => !stale && setPublicBalance(null));
+      .catch(() => {
+        /* keep last good value */
+      });
     return () => {
       stale = true;
     };
@@ -62,7 +60,6 @@ export default function ShieldPanel({
         getPoolFee(),
       ]);
       setPublicBalance(freshBalance);
-      setFee(freshFee);
       const max = freshBalance - freshFee - GAS_RESERVE;
       if (max <= 0n) {
         setPhase({
@@ -79,6 +76,12 @@ export default function ShieldPanel({
   }, [address]);
 
   const onShield = useCallback(async () => {
+    // The wallet can switch accounts under us; never sign for a different
+    // account than the one this form was validated against.
+    if (!sameFelt(account.address, address)) {
+      setPhase({ kind: "error", message: COPY.accountChanged });
+      return;
+    }
     let raw: bigint;
     try {
       raw = parseTokenAmount(amount);
@@ -101,14 +104,12 @@ export default function ShieldPanel({
       return;
     }
     if (fee !== null && freshFee !== fee) {
-      setFee(freshFee);
       setPhase({
         kind: "error",
         message: `The pool fee changed to ${formatTokenAmount(freshFee)} STRK — review and press Shield again.`,
       });
       return;
     }
-    setFee(freshFee);
     setPublicBalance(freshBalance);
     if (raw + freshFee > freshBalance) {
       setPhase({
@@ -129,98 +130,24 @@ export default function ShieldPanel({
         message:
           kind === "refused"
             ? "Declined in the wallet. If you had already signed the first (STRK approval) step, that approval to the pool may remain — it can only ever be spent by a deposit you sign yourself."
-            : `Shield failed: ${
-                typeof err === "object" && err !== null && "message" in err
-                  ? String((err as { message: unknown }).message)
-                  : String(err)
-              }`,
+            : `Shield failed: ${walletErrorMessage(err)}`,
       });
     }
   }, [account, address, amount, fee]);
 
   if (phase.kind === "done") {
-    const { outcome } = phase;
-    const voyager = (
-      <a
-        className="text-sm text-white/80 underline underline-offset-4 hover:text-white"
-        href={voyagerTx(outcome.txHash)}
-        target="_blank"
-        rel="noreferrer"
-      >
-        {outcome.txHash.slice(0, 18)}… on Voyager
-      </a>
-    );
-    const back = (
-      <button
-        type="button"
-        onClick={() => setPhase({ kind: "form" })}
-        className="mt-4 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/80 transition hover:border-white/30"
-      >
-        Back
-      </button>
-    );
-
-    if (outcome.kind === "confirmed") {
-      return (
-        <section className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-6">
-          <h2 className="text-sm font-medium tracking-wide text-emerald-200/70 uppercase">
-            Shielded
-          </h2>
-          <p className="mt-3 text-sm text-white/70">
-            Deposit confirmed on mainnet — execution succeeded. This account is
-            now registered in the pool.
-          </p>
-          <p className="mt-2">{voyager}</p>
-          <p className="mt-3 text-xs text-white/40">
-            Freshly shielded notes mature for ~10 blocks before they can be spent.
-          </p>
-          {back}
-        </section>
-      );
-    }
-    if (outcome.kind === "reverted") {
-      return (
-        <section className="rounded-xl border border-red-400/25 bg-red-400/[0.05] p-6">
-          <h2 className="text-sm font-medium tracking-wide text-red-200/70 uppercase">
-            Deposit reverted
-          </h2>
-          <p className="mt-3 text-sm text-white/70">
-            The transaction was included on-chain but <strong>reverted</strong> —
-            no STRK entered the pool. This usually means a pool-side check
-            failed (fee change, insufficient balance at execution).
-          </p>
-          <p className="mt-2">{voyager}</p>
-          {back}
-        </section>
-      );
-    }
-    if (outcome.kind === "failed") {
-      return (
-        <section className="rounded-xl border border-red-400/25 bg-red-400/[0.05] p-6">
-          <h2 className="text-sm font-medium tracking-wide text-red-200/70 uppercase">
-            Transaction failed
-          </h2>
-          <p className="mt-3 text-sm text-white/70">
-            The network reported this transaction won&apos;t land:{" "}
-            <code className="text-xs">{outcome.message}</code>
-          </p>
-          <p className="mt-2">{voyager}</p>
-          {back}
-        </section>
-      );
-    }
     return (
-      <section className="rounded-xl border border-white/15 bg-white/[0.03] p-6">
-        <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-          Submitted — status unknown
-        </h2>
-        <p className="mt-3 text-sm text-white/70">
-          The wait timed out before a receipt arrived. That is not a failure —
-          check the explorer before assuming either way.
-        </p>
-        <p className="mt-2">{voyager}</p>
-        {back}
-      </section>
+      <TxOutcome
+        outcome={phase.outcome}
+        operation="Shield"
+        confirmedTitle="Shielded"
+        confirmedBody={`Deposit confirmed on mainnet — execution succeeded. This account is now registered in the pool. ${COPY.noteMaturity}`}
+        revertedBody="The deposit was included but reverted — no STRK entered the pool. Possible causes: a fee change between quote and execution, or insufficient public balance at execution."
+        onBack={() => {
+          setAmount("");
+          setPhase({ kind: "form" });
+        }}
+      />
     );
   }
 
@@ -235,12 +162,6 @@ export default function ShieldPanel({
         Moves STRK from your public balance into the pool as an encrypted note.
         This deposit — your address and amount — is the public leg.
       </p>
-
-      {disabled ? (
-        <p className="mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
-          Wallet is on the wrong network — switch to mainnet to shield.
-        </p>
-      ) : null}
 
       <div className="mt-4 flex gap-2">
         <input
