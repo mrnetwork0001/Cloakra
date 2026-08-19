@@ -49,7 +49,7 @@ export default function SplitPanel({
     { id: ++rowIdRef.current, address: "", amount: "" },
   ]);
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
-  const fee = usePoolFee(phase.kind === "form");
+  const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
   const [settledCount, setSettledCount] = useState(0);
 
   const setRow = useCallback((id: number, patch: Partial<Row>) => {
@@ -118,7 +118,7 @@ export default function SplitPanel({
 
     setPhase({ kind: "submitting" });
     try {
-      const outcome = await executeStrk20(account, buildSplit(parsed));
+      const outcome = await executeStrk20(account, buildSplit(parsed), "StealthSplit");
       setSettledCount(parsed.length);
       setPhase({ kind: "done", outcome });
     } catch (err) {

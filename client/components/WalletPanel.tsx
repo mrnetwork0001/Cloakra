@@ -13,6 +13,7 @@ import {
   getWalletChainId,
   isUserRefusal,
   sameFelt,
+  withTimeout,
 } from "@/lib/strk20";
 import { shorten, voyagerContract, STRK20_POOL_ADDRESS } from "@/lib/config";
 import ShieldedBalance from "./ShieldedBalance";
@@ -96,13 +97,19 @@ export default function WalletPanel({
     setSwitchError(null);
     setStatus({ kind: "connecting" });
     try {
-      // Capability first: a plain version query, no user data involved.
-      const strk20 = await detectStrk20Support(wallet);
+      // Connect FIRST: this is what pops the wallet's unlock/approve UI. A
+      // locked extension never answers background version queries, so any
+      // read before connect hangs forever with no popup (seen live with
+      // Ready). Capability is still a version query — never a data probe —
+      // it just runs after the wallet is awake, with a timeout.
       const account = await connectWallet(wallet);
+      const seq = ++chainSeqRef.current;
       // Guard on the WALLET's chain, not account.provider.getChainId() —
       // the provider reports our own RPC, which is always mainnet here.
-      const seq = ++chainSeqRef.current;
-      const chainId = await getWalletChainId(wallet);
+      const [strk20, chainId] = await Promise.all([
+        withTimeout(detectStrk20Support(wallet), 8_000, false),
+        getWalletChainId(wallet),
+      ]);
       if (attemptRef.current !== attempt) return; // cancelled or superseded
       if (chainSeqRef.current !== seq) return; // a newer chain read exists
       setStatus({

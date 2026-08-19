@@ -34,12 +34,12 @@ export default function ShieldPanel({
   const [amount, setAmount] = useState("");
   const [publicBalance, setPublicBalance] = useState<bigint | null>(null);
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
-  const fee = usePoolFee(phase.kind === "form");
+  const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
 
   // Public balance over our own RPC — no wallet involvement, no consent
   // needed. Refreshes when the form is (re)shown; keeps last good on failure.
   useEffect(() => {
-    if (phase.kind !== "form") return;
+    if (phase.kind !== "form" && phase.kind !== "error") return;
     let stale = false;
     getPublicStrkBalance(address)
       .then((b) => !stale && setPublicBalance(b))
@@ -121,7 +121,7 @@ export default function ShieldPanel({
 
     setPhase({ kind: "submitting" });
     try {
-      const outcome = await executeStrk20(account, [buildShield(raw)]);
+      const outcome = await executeStrk20(account, [buildShield(raw)], "Shield");
       setPhase({ kind: "done", outcome });
     } catch (err) {
       const kind = walletErrorKind(err);

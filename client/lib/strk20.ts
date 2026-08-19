@@ -60,6 +60,22 @@ export async function getWalletChainId(
   );
 }
 
+/**
+ * Race a wallet request against a timeout. Locked or slept extensions can
+ * leave a background request pending forever with no popup and no rejection —
+ * the UI must never hang on one.
+ */
+export function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T,
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export interface ShieldedBalance {
   token: string;
   /** Raw balance in the token's smallest unit. */
@@ -270,13 +286,18 @@ const WAIT_TIMEOUT = Symbol("wait-timeout");
  * - it REJECTS with terminal diagnoses (mempool eviction) that must not be
  *   conflated with our benign timeout;
  * - relayed txs can be slow to appear, so the wait needs a ceiling at all.
+ * The tx hash is also recorded module-wide (lib/submissions.ts) so a panel
+ * remount mid-submit cannot lose the user's only pointer to an in-flight tx.
  */
 export async function executeStrk20(
   account: WalletAccountV6,
   actions: STRK20_ACTION[],
+  operation = "STRK20 operation",
   waitMs = 90_000,
 ): Promise<SubmitOutcome> {
+  const { recordSubmission } = await import("./submissions");
   const { transaction_hash: txHash } = await account.strk20InvokeTransaction(actions);
+  recordSubmission({ operation, txHash, kind: "pending" });
 
   const settled = await Promise.race([
     getProvider()
@@ -288,14 +309,14 @@ export async function executeStrk20(
     ),
   ]);
 
-  if (settled === WAIT_TIMEOUT) return { kind: "submitted", txHash };
-  if (!settled.ok) {
-    const e = settled.error as { message?: unknown } | null;
-    return {
-      kind: "failed",
-      txHash,
-      message: String(e && "message" in (e as object) ? e.message : settled.error),
-    };
+  let outcome: SubmitOutcome;
+  if (settled === WAIT_TIMEOUT) {
+    outcome = { kind: "submitted", txHash };
+  } else if (!settled.ok) {
+    outcome = { kind: "failed", txHash, message: walletErrorMessage(settled.error) };
+  } else {
+    outcome = { kind: settled.receipt.isSuccess() ? "confirmed" : "reverted", txHash };
   }
-  return { kind: settled.receipt.isSuccess() ? "confirmed" : "reverted", txHash };
+  recordSubmission({ operation, txHash, kind: outcome.kind });
+  return outcome;
 }

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import type { WalletAccountV6 } from "starknet";
 import {
-  buildTransfer,
+  buildWithdraw,
   executeStrk20,
   formatTokenAmount,
   parseAddress,
@@ -17,8 +17,8 @@ import { usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 
-/** GhostBounty's primitive: a single private transfer inside the pool. */
-export default function TransferPanel({
+/** Unshield: private → public. The one flow whose output leg is public. */
+export default function WithdrawPanel({
   account,
   address,
   disabled = false,
@@ -33,16 +33,12 @@ export default function TransferPanel({
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
 
   const onBack = useCallback(() => {
-    // Clear the form: a pre-filled, enabled form after a submission is a
-    // double-payment invitation.
     setRecipient("");
     setAmount("");
     setPhase({ kind: "form" });
   }, []);
 
-  const onSend = useCallback(async () => {
-    // The wallet can switch accounts under us; never sign for a different
-    // account than the one this form was validated against.
+  const onWithdraw = useCallback(async () => {
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -50,10 +46,8 @@ export default function TransferPanel({
     let to: string;
     let raw: bigint;
     try {
+      // Withdraw-to-self is the normal unshield; any public address is legal.
       to = parseAddress(recipient);
-      if (sameFelt(to, address)) {
-        throw new Error("That's your own address — pick the recipient's.");
-      }
       raw = parseTokenAmount(amount);
     } catch (err) {
       setPhase({ kind: "error", message: (err as Error).message });
@@ -62,7 +56,7 @@ export default function TransferPanel({
 
     setPhase({ kind: "submitting" });
     try {
-      const outcome = await executeStrk20(account, [buildTransfer(to, raw)], "Private transfer");
+      const outcome = await executeStrk20(account, [buildWithdraw(to, raw)], "Unshield");
       setPhase({ kind: "done", outcome });
     } catch (err) {
       const kind = walletErrorKind(err);
@@ -70,12 +64,12 @@ export default function TransferPanel({
         kind: "error",
         message:
           kind === "refused"
-            ? "Transfer declined in the wallet."
-            : kind === "not_registered"
-              ? "One side of this transfer isn't registered in the pool. If this account has never shielded, shield first — otherwise the recipient needs one pool use from their own privacy wallet."
-              : kind === "insufficient_private"
-                ? "Not enough shielded balance — remember the pool fee, and freshly shielded notes mature ~10 blocks before they can be spent."
-                : `Transfer failed: ${walletErrorMessage(err)}`,
+            ? "Withdrawal declined in the wallet."
+            : kind === "insufficient_private"
+              ? "Not enough shielded balance — remember the pool fee, and freshly shielded notes mature ~10 blocks."
+              : kind === "not_registered"
+                ? "This account isn't registered in the pool yet — there is no shielded balance to withdraw."
+                : `Withdrawal failed: ${walletErrorMessage(err)}`,
       });
     }
   }, [account, address, recipient, amount]);
@@ -84,10 +78,10 @@ export default function TransferPanel({
     return (
       <TxOutcome
         outcome={phase.outcome}
-        operation="Private transfer"
-        confirmedTitle="Sent privately"
-        confirmedBody="Transfer confirmed — execution succeeded. Inside the pool, sender, recipient, and amount stay private."
-        revertedBody="The transfer was included but reverted — no value moved. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
+        operation="Unshield"
+        confirmedTitle="Unshielded"
+        confirmedBody="Withdrawal confirmed — execution succeeded. This leg is public: the recipient address and amount are visible on-chain. No on-chain record names the source balance — though timing and amount correlation with public deposits is always possible."
+        revertedBody="The withdrawal was included but reverted — nothing left the pool. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
         onBack={onBack}
       />
     );
@@ -98,22 +92,38 @@ export default function TransferPanel({
       className={`rounded-xl border border-white/10 bg-white/[0.02] p-6 ${disabled ? "opacity-60" : ""}`}
     >
       <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-        Private transfer
+        Unshield
       </h2>
       <p className="mt-2 text-sm text-white/50">
-        Sends shielded STRK to another registered account. Nothing about this
-        transfer — sender, recipient, amount — appears publicly.
+        Withdraws shielded STRK back to a public address.{" "}
+        <strong className="text-white/70">This leg is public</strong> — the
+        recipient and amount appear on-chain. No on-chain record names the
+        depositing org, but timing and amounts are public too: unshielding a
+        matching amount right after a shield is trivially correlatable.
       </p>
 
       <div className="mt-4 space-y-2">
-        <input
-          type="text"
-          value={recipient}
-          onChange={(e) => setRecipient(e.target.value)}
-          placeholder="Recipient address (0x…)"
-          disabled={disabled || phase.kind === "submitting"}
-          className="w-full rounded-lg border border-white/15 bg-transparent px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="Public recipient (0x…)"
+            disabled={disabled || phase.kind === "submitting"}
+            className="w-full flex-1 rounded-lg border border-white/15 bg-transparent px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setRecipient(address);
+              if (phase.kind === "error") setPhase({ kind: "form" });
+            }}
+            disabled={disabled || phase.kind === "submitting"}
+            className="rounded-lg border border-white/15 px-3 py-2 text-sm text-white/60 transition hover:border-white/30 hover:text-white disabled:opacity-40"
+          >
+            Self
+          </button>
+        </div>
         <input
           type="text"
           inputMode="decimal"
@@ -132,10 +142,6 @@ export default function TransferPanel({
         </div>
       </dl>
 
-      <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
-        {COPY.recipientPrereq} {COPY.noteMaturity}
-      </p>
-
       {phase.kind === "error" ? (
         <p className="mt-3 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-200">
           {phase.message}
@@ -144,7 +150,7 @@ export default function TransferPanel({
 
       <button
         type="button"
-        onClick={onSend}
+        onClick={onWithdraw}
         disabled={
           disabled ||
           phase.kind === "submitting" ||
@@ -153,7 +159,7 @@ export default function TransferPanel({
         }
         className="mt-4 w-full rounded-lg border border-white/20 bg-white/[0.05] px-4 py-2.5 font-medium text-white transition hover:border-white/40 hover:bg-white/[0.08] disabled:opacity-50"
       >
-        {phase.kind === "submitting" ? "Waiting for wallet…" : "Send privately"}
+        {phase.kind === "submitting" ? "Waiting for wallet…" : "Unshield"}
       </button>
     </section>
   );
