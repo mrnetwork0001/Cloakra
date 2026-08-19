@@ -79,6 +79,8 @@ Phase 1 note (2026-08-16): a 15-agent adversarial review confirmed 10 unique fin
 
 Phase 1 manual verification (2026-08-16): connect ✅ · capability detection ✅ (balance button shown for Ready) · unregistered-account state ✅ (typed NOT_REGISTERED handled, no popup by design). Wrong-network banner untestable — the user's Ready build would not switch to Sepolia; the guard stays as defensive code. Balance-consent + decline tests deferred until the account registers via the first shield.
 
+Phase 2 field note (2026-08-19): **registration is NOT automatic on a dapp-initiated shield.** Ready rejected a first deposit with typed `NOT_REGISTERED` (118) — the docs' "wallets handle registration automatically on first use" does not extend to `strk20InvokeTransaction` from a dapp. The account must first activate its private balance inside the wallet (one-time `ViewingKeySet` registration); UI copy updated accordingly.
+
 ## 10. Open items to re-verify at build time
 
 - get-starknet `next` moved 6.0.3 → 6.0.4 — check the changelog before any upgrade; 6.0.3 pins hold for now.

@@ -130,7 +130,9 @@ export default function ShieldPanel({
         message:
           kind === "refused"
             ? "Declined in the wallet. If you had already signed the first (STRK approval) step, that approval to the pool may remain — it can only ever be spent by a deposit you sign yourself."
-            : `Shield failed: ${walletErrorMessage(err)}`,
+            : kind === "not_registered"
+              ? "This account isn't registered in the pool yet, and Ready won't register it as part of a dapp-initiated deposit. Open the Ready extension, activate the private balance for this account (it signs a one-time registration), then shield here again."
+              : `Shield failed: ${walletErrorMessage(err)}`,
       });
     }
   }, [account, address, amount, fee]);
