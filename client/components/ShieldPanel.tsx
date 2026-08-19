@@ -60,11 +60,14 @@ export default function ShieldPanel({
         getPoolFee(),
       ]);
       setPublicBalance(freshBalance);
-      const max = freshBalance - freshFee - GAS_RESERVE;
-      if (max <= 0n) {
+      // Fee semantics verified on mainnet (TX #1): the pool fee is deducted
+      // FROM the deposited amount (26 in → 20 shielded), so Max only reserves
+      // gas. The deposit must still exceed the fee to net anything.
+      const max = freshBalance - GAS_RESERVE;
+      if (max <= freshFee) {
         setPhase({
           kind: "error",
-          message: `Balance doesn't cover the ${formatTokenAmount(freshFee)} STRK pool fee plus a 1 STRK gas reserve.`,
+          message: `Balance (minus a 1 STRK gas reserve) wouldn't exceed the ${formatTokenAmount(freshFee)} STRK pool fee — nothing would be shielded.`,
         });
         return;
       }
@@ -111,10 +114,17 @@ export default function ShieldPanel({
       return;
     }
     setPublicBalance(freshBalance);
-    if (raw + freshFee > freshBalance) {
+    if (raw > freshBalance) {
       setPhase({
         kind: "error",
-        message: `Amount plus the ${formatTokenAmount(freshFee)} STRK pool fee exceeds your public balance.`,
+        message: "Amount exceeds your public balance.",
+      });
+      return;
+    }
+    if (raw <= freshFee) {
+      setPhase({
+        kind: "error",
+        message: `The ${formatTokenAmount(freshFee)} STRK pool fee is deducted from the deposit — shield more than the fee or nothing arrives.`,
       });
       return;
     }
@@ -193,9 +203,23 @@ export default function ShieldPanel({
           </dd>
         </div>
         <div className="flex justify-between">
-          <dt>Pool fee (re-checked at signing)</dt>
+          <dt>Pool fee (deducted from the deposit)</dt>
           <dd>{fee !== null ? `${formatTokenAmount(fee)} STRK` : "…"}</dd>
         </div>
+        {(() => {
+          if (fee === null) return null;
+          try {
+            const net = parseTokenAmount(amount) - fee;
+            return net > 0n ? (
+              <div className="flex justify-between">
+                <dt>You receive shielded</dt>
+                <dd className="text-white/80">≈ {formatTokenAmount(net)} STRK</dd>
+              </div>
+            ) : null;
+          } catch {
+            return null;
+          }
+        })()}
       </dl>
 
       <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
