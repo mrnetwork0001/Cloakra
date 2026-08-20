@@ -22,10 +22,15 @@ export default function TransferPanel({
   account,
   address,
   disabled = false,
+  title = "Private transfer",
+  description = "Sends shielded STRK to another registered account. The transaction itself is public, but sender, recipient, and amount are unreadable.",
 }: {
   account: WalletAccountV6;
   address: string;
   disabled?: boolean;
+  /** Module framing — GhostBounty reuses these same rails. */
+  title?: string;
+  description?: string;
 }) {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
@@ -62,7 +67,7 @@ export default function TransferPanel({
 
     setPhase({ kind: "submitting" });
     try {
-      const outcome = await executeStrk20(account, [buildTransfer(to, raw)], "Private transfer");
+      const outcome = await executeStrk20(account, [buildTransfer(to, raw)], title);
       setPhase({ kind: "done", outcome });
     } catch (err) {
       const kind = walletErrorKind(err);
@@ -72,7 +77,7 @@ export default function TransferPanel({
           kind === "refused"
             ? "Transfer declined in the wallet."
             : kind === "not_registered"
-              ? "One side of this transfer isn't registered in the pool. If this account has never shielded, shield first — otherwise the recipient needs one pool use from their own privacy wallet."
+              ? "One side of this transfer isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready — run it there (dapp-initiated operations can't trigger it); the recipient must have done the same in their own wallet."
               : kind === "insufficient_private"
                 ? "Not enough shielded balance — remember the pool fee, and freshly shielded notes mature ~10 blocks before they can be spent."
                 : `Transfer failed: ${walletErrorMessage(err)}`,
@@ -84,7 +89,7 @@ export default function TransferPanel({
     return (
       <TxOutcome
         outcome={phase.outcome}
-        operation="Private transfer"
+        operation={title}
         confirmedTitle="Sent privately"
         confirmedBody="Transfer confirmed — execution succeeded. Inside the pool, sender, recipient, and amount stay private."
         revertedBody="The transfer was included but reverted — no value moved. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
@@ -98,12 +103,9 @@ export default function TransferPanel({
       className={`rounded-xl border border-white/10 bg-white/[0.02] p-6 ${disabled ? "opacity-60" : ""}`}
     >
       <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-        Private transfer
+        {title}
       </h2>
-      <p className="mt-2 text-sm text-white/50">
-        Sends shielded STRK to another registered account. Nothing about this
-        transfer — sender, recipient, amount — appears publicly.
-      </p>
+      <p className="mt-2 text-sm text-white/50">{description}</p>
 
       <div className="mt-4 space-y-2">
         <input

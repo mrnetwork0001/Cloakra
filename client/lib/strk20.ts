@@ -295,9 +295,29 @@ export async function executeStrk20(
   operation = "STRK20 operation",
   waitMs = 90_000,
 ): Promise<SubmitOutcome> {
-  const { recordSubmission } = await import("./submissions");
-  const { transaction_hash: txHash } = await account.strk20InvokeTransaction(actions);
-  recordSubmission({ operation, txHash, kind: "pending" });
+  const { beginSubmission, updateSubmission } = await import("./submissions");
+  // Recorded BEFORE the wallet call: a pre-broadcast failure after the panel
+  // unmounts (tab switch with the popup open) must not vanish silently.
+  const id = beginSubmission(operation);
+  let txHash: string;
+  try {
+    // A locked/wedged extension can leave this pending forever; bound it so
+    // the busy lock (which freezes tab nav) can always release.
+    const result = await withTimeout(
+      account.strk20InvokeTransaction(actions),
+      120_000,
+      null,
+    );
+    if (result === null) {
+      updateSubmission(id, { kind: "not_sent" });
+      throw new Error("The wallet did not respond — unlock it and try again.");
+    }
+    txHash = result.transaction_hash;
+  } catch (err) {
+    updateSubmission(id, { kind: "not_sent" });
+    throw err;
+  }
+  updateSubmission(id, { txHash, kind: "pending" });
 
   const settled = await Promise.race([
     getProvider()
@@ -317,6 +337,6 @@ export async function executeStrk20(
   } else {
     outcome = { kind: settled.receipt.isSuccess() ? "confirmed" : "reverted", txHash };
   }
-  recordSubmission({ operation, txHash, kind: outcome.kind });
+  updateSubmission(id, { kind: outcome.kind });
   return outcome;
 }

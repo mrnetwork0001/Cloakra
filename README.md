@@ -24,11 +24,11 @@ Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 | Per-recipient amounts | Any withdrawal to a public wallet (address + amount) |
 | The link between payer and payee | That an address interacted with the pool, and when |
 
-The privacy is the broken *link* between the org's deposit and a recipient's withdrawal — not invisibility of the public legs. Recipients need a privacy-enabled wallet ([Ready](https://www.ready.co)); registration happens automatically in-wallet on first use.
+The privacy is the broken *link* between the org's deposit and a recipient's withdrawal — not invisibility of the public legs. Recipients need a privacy-enabled wallet ([Ready](https://www.ready.co)) with private tokens enabled — a one-time in-wallet registration step (Ready's flow deposits 6 STRK, which the pool fee consumes; verified on mainnet).
 
 ## Status
 
-**Day 2 of 16.** Wallet discovery + connection, mainnet chain guard, STRK20 capability detection (version query — never a data probe), and a consent-gated shielded-balance read. No pool transactions yet — `strk20.json` fields fill in as they come to exist. Integration plan: [STRK20_INTEGRATION_PLAN.md](STRK20_INTEGRATION_PLAN.md).
+**Live on Starknet mainnet.** The treasury lifecycle — shield → shielded balance → unshield — has been executed through this UI against the canonical pool, and **three verified mainnet transaction hashes are recorded in [`strk20.json`](strk20.json)** (each gated on `ACCEPTED` + `SUCCEEDED` via [`scripts/verify-tx.mjs`](scripts/verify-tx.mjs)). The module flows — private transfer and the atomic split — ride the same wallet API against the same pool but have not yet been exercised by a recorded hash. Also ships: a consent-gated shielded-balance read and a public-footprint view built from the pool's `Deposit`/`Withdrawal` events. Integration plan: [STRK20_INTEGRATION_PLAN.md](STRK20_INTEGRATION_PLAN.md).
 
 Cloakra integrates the pool through **`WalletAccountV6`** in starknet.js, which exposes the STRK20 privacy actions (`strk20Balances`, `strk20PrepareInvoke`, `strk20InvokeTransaction`) directly. Because `strk20InvokeTransaction` accepts an *array* of actions settled in one transaction, StealthSplit's atomic one-note-to-many-recipients payout needs no custom Cairo contract. Every operation is signed by the user's own wallet; no key material is ever held server-side.
 

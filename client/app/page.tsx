@@ -4,19 +4,19 @@ import { RPC_URL } from "@/lib/config";
 const MODULES = [
   {
     name: "StealthSplit",
-    status: "Day 7",
+    status: "On mainnet rails",
     blurb:
-      "One funded note split atomically into per-contributor shielded balances. Co-workers cannot read each other's allocation.",
+      "One shielded balance split atomically into per-contributor balances. Co-workers cannot read each other's allocation.",
   },
   {
     name: "GhostBounty",
-    status: "Day 9",
+    status: "On mainnet rails",
     blurb:
       "Bounty payouts to a researcher's shielded balance, so disclosing a vulnerability does not deanonymize the wallet that gets paid.",
   },
   {
     name: "StealthGrant",
-    status: "Day 12",
+    status: "On mainnet rails",
     blurb:
       "Shielded grant disbursement over the same rails — the grantee list and per-project amounts stay inside the pool.",
   },

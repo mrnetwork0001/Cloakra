@@ -34,10 +34,15 @@ export default function SplitPanel({
   account,
   address,
   disabled = false,
+  title = "StealthSplit",
+  description = "Disburse one shielded balance to the whole team in a single atomic transaction. All transfers land or none do — and no recipient can read anyone else's amount.",
 }: {
   account: WalletAccountV6;
   address: string;
   disabled?: boolean;
+  /** Module framing — GhostGrant/StealthGrant reuse these same rails. */
+  title?: string;
+  description?: string;
 }) {
   const rowIdRef = useRef(0);
   const newRow = useCallback(
@@ -118,7 +123,7 @@ export default function SplitPanel({
 
     setPhase({ kind: "submitting" });
     try {
-      const outcome = await executeStrk20(account, buildSplit(parsed), "StealthSplit");
+      const outcome = await executeStrk20(account, buildSplit(parsed), title);
       setSettledCount(parsed.length);
       setPhase({ kind: "done", outcome });
     } catch (err) {
@@ -129,7 +134,7 @@ export default function SplitPanel({
           kind === "refused"
             ? "Split declined in the wallet."
             : kind === "not_registered"
-              ? "This account or at least one recipient isn't registered in the pool. If you have never shielded, shield first; every recipient needs one pool use from their own privacy wallet."
+              ? "This account or at least one recipient isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready — run it there (dapp-initiated operations can't trigger it), and every recipient must have done the same."
               : kind === "insufficient_private"
                 ? "Not enough shielded balance for the full split — remember fees, and freshly shielded notes mature ~10 blocks."
                 : `Split failed: ${walletErrorMessage(err)}`,
@@ -141,7 +146,7 @@ export default function SplitPanel({
     return (
       <TxOutcome
         outcome={phase.outcome}
-        operation="StealthSplit"
+        operation={title}
         confirmedTitle="Split settled"
         confirmedBody={`All ${settledCount} transfers landed in one atomic transaction. Each recipient holds an independent shielded balance — none of them can see the others' allocations.`}
         revertedBody="The split was included but reverted — the batch is atomic, so no recipient received anything. Possible causes: immature notes (~10 blocks), insufficient shielded balance for the full batch, or a fee change."
@@ -155,13 +160,9 @@ export default function SplitPanel({
       className={`rounded-xl border border-white/10 bg-white/[0.02] p-6 ${disabled ? "opacity-60" : ""}`}
     >
       <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-        StealthSplit
+        {title}
       </h2>
-      <p className="mt-2 text-sm text-white/50">
-        Disburse one shielded balance to the whole team in a single atomic
-        transaction. All transfers land or none do — and no recipient can read
-        anyone else&apos;s amount.
-      </p>
+      <p className="mt-2 text-sm text-white/50">{description}</p>
 
       <div className="mt-4 space-y-2">
         {rows.map((row, i) => (
