@@ -165,8 +165,8 @@ const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
  * result. Throws a user-showable message otherwise.
  */
 export function parseAddress(input: string): string {
-  const trimmed = input.trim();
-  if (!/^0x[0-9a-fA-F]{1,64}$/.test(trimmed)) {
+  const trimmed = input.trim().toLowerCase();
+  if (!/^0x[0-9a-f]{1,64}$/.test(trimmed)) {
     throw new Error("Enter a Starknet address (0x…).");
   }
   const value = BigInt(trimmed);
@@ -222,6 +222,9 @@ export function parseTokenAmount(input: string, decimals = 18): bigint {
     BigInt(whole) * 10n ** BigInt(decimals) +
     BigInt(frac.padEnd(decimals, "0") || "0");
   if (raw <= 0n) throw new Error("Amount must be greater than zero.");
+  if (raw >= FIELD_PRIME) {
+    throw new Error("Amount is larger than the token can represent.");
+  }
   return raw;
 }
 

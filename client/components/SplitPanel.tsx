@@ -15,6 +15,7 @@ import {
 } from "@/lib/strk20";
 import { usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
+import { parseRecipientsCsv } from "@/lib/csv";
 import TxOutcome from "./TxOutcome";
 
 const MAX_RECIPIENTS = 10;
@@ -56,6 +57,9 @@ export default function SplitPanel({
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
   const [settledCount, setSettledCount] = useState(0);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [csvNote, setCsvNote] = useState<string | null>(null);
 
   const setRow = useCallback((id: number, patch: Partial<Row>) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -73,8 +77,39 @@ export default function SplitPanel({
     // Reset to a blank form: a pre-filled payroll behind an enabled submit
     // button is one accidental click away from paying everyone twice.
     setRows([newRow(), newRow()]);
+    setCsvText("");
+    setCsvOpen(false);
+    setCsvNote(null);
     setPhase({ kind: "form" });
   }, [newRow]);
+
+  const onApplyCsv = useCallback(() => {
+    setCsvNote(null);
+    const { recipients, errors } = parseRecipientsCsv(csvText, MAX_RECIPIENTS);
+    if (errors.length) {
+      setPhase({
+        kind: "error",
+        message: `CSV: ${errors.slice(0, 4).join(" · ")}${errors.length > 4 ? ` · +${errors.length - 4} more` : ""}`,
+      });
+      return;
+    }
+    if (recipients.length === 0) {
+      setPhase({ kind: "error", message: "CSV: no valid rows found." });
+      return;
+    }
+    setRows(
+      recipients.map((r) => ({
+        id: ++rowIdRef.current,
+        address: r.address,
+        amount: r.amount,
+      })),
+    );
+    setCsvOpen(false);
+    setCsvNote(
+      `${recipients.length} recipient${recipients.length === 1 ? "" : "s"} filled from CSV — replacing any typed rows. Review before submitting.`,
+    );
+    setPhase({ kind: "form" });
+  }, [csvText]);
 
   // Best-effort running total for display; invalid rows count as 0.
   const total = rows.reduce((sum, r) => {
@@ -197,14 +232,55 @@ export default function SplitPanel({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={addRow}
-        disabled={disabled || rows.length >= MAX_RECIPIENTS || phase.kind === "submitting"}
-        className="mt-2 text-sm text-white/50 underline-offset-4 transition hover:text-white/80 hover:underline disabled:opacity-40"
-      >
-        + Add recipient
-      </button>
+      <div className="mt-2 flex gap-4">
+        <button
+          type="button"
+          onClick={addRow}
+          disabled={disabled || rows.length >= MAX_RECIPIENTS || phase.kind === "submitting"}
+          className="text-sm text-white/50 underline-offset-4 transition hover:text-white/80 hover:underline disabled:opacity-40"
+        >
+          + Add recipient
+        </button>
+        <button
+          type="button"
+          onClick={() => setCsvOpen((v) => !v)}
+          disabled={disabled || phase.kind === "submitting"}
+          className="text-sm text-white/50 underline-offset-4 transition hover:text-white/80 hover:underline disabled:opacity-40"
+        >
+          {csvOpen ? "Hide CSV" : "Paste CSV"}
+        </button>
+      </div>
+
+      {csvOpen ? (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={csvText}
+            onChange={(e) => setCsvText(e.target.value)}
+            placeholder={"0xabc…, 12.5\n0xdef…, 7"}
+            rows={4}
+            disabled={disabled || phase.kind === "submitting"}
+            className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 font-mono text-xs text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={onApplyCsv}
+            disabled={disabled || !csvText.trim() || phase.kind === "submitting"}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/70 transition hover:border-white/30 hover:text-white disabled:opacity-40"
+          >
+            Validate &amp; fill rows
+          </button>
+          <p className="text-xs text-white/35">
+            One recipient per line: <code>address, amount</code>. Every row
+            passes the same validation as the form — nothing is sent yet.
+          </p>
+        </div>
+      ) : null}
+
+      {csvNote ? (
+        <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/60">
+          {csvNote}
+        </p>
+      ) : null}
 
       <dl className="mt-4 space-y-1 border-t border-white/10 pt-3 text-sm text-white/50">
         <div className="flex justify-between">

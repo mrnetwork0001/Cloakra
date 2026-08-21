@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import ProofPanel from "@/components/ProofPanel";
 import { RPC_URL } from "@/lib/config";
 
 const MODULES = [
@@ -71,6 +72,8 @@ export default function Home() {
           ))}
         </ul>
       </section>
+
+      <ProofPanel />
 
       <footer className="mt-16 border-t border-white/10 pt-6 text-sm text-white/30">
         Apache 2.0 · Built for the STRK20 Private Sprint
