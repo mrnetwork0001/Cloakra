@@ -201,14 +201,14 @@ export default function SplitPanel({
 
       <div className="mt-4 space-y-2">
         {rows.map((row, i) => (
-          <div key={row.id} className="flex gap-2">
+          <div key={row.id} className="flex flex-wrap gap-2 sm:flex-nowrap">
             <input
               type="text"
               value={row.address}
               onChange={(e) => setRow(row.id, { address: e.target.value })}
               placeholder={`Recipient ${i + 1} (0x…)`}
               disabled={disabled || phase.kind === "submitting"}
-              className="w-full flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
+              className="w-full min-w-0 flex-1 basis-full rounded-lg border border-white/15 bg-transparent px-3 py-2 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50 sm:basis-auto"
             />
             <input
               type="text"
