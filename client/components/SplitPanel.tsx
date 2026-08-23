@@ -207,6 +207,7 @@ export default function SplitPanel({
               value={row.address}
               onChange={(e) => setRow(row.id, { address: e.target.value })}
               placeholder={`Recipient ${i + 1} (0x…)`}
+              aria-label={`Recipient ${i + 1} address`}
               disabled={disabled || phase.kind === "submitting"}
               className="w-full min-w-0 flex-1 basis-full rounded-lg border border-white/15 bg-transparent px-3 py-2 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50 sm:basis-auto"
             />
@@ -216,6 +217,7 @@ export default function SplitPanel({
               value={row.amount}
               onChange={(e) => setRow(row.id, { amount: e.target.value })}
               placeholder="STRK"
+              aria-label={`Recipient ${i + 1} amount in STRK`}
               disabled={disabled || phase.kind === "submitting"}
               className="w-28 rounded-lg border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
             />
@@ -257,6 +259,7 @@ export default function SplitPanel({
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder={"0xabc…, 12.5\n0xdef…, 7"}
+            aria-label="CSV payroll input"
             rows={4}
             disabled={disabled || phase.kind === "submitting"}
             className="w-full rounded-lg border border-white/15 bg-transparent px-3 py-2 font-mono text-xs text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"

@@ -182,6 +182,7 @@ export default function ShieldPanel({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount in STRK"
+          aria-label="Amount of STRK to shield"
           disabled={disabled || phase.kind === "submitting"}
           className="w-full rounded-lg border border-white/15 bg-transparent px-4 py-2.5 text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
         />

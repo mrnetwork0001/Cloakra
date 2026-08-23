@@ -113,6 +113,7 @@ export default function TransferPanel({
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
           placeholder="Recipient address (0x…)"
+          aria-label="Recipient address"
           disabled={disabled || phase.kind === "submitting"}
           className="w-full rounded-lg border border-white/15 bg-transparent px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
         />
@@ -122,6 +123,7 @@ export default function TransferPanel({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount in STRK"
+          aria-label="Amount of STRK to send"
           disabled={disabled || phase.kind === "submitting"}
           className="w-full rounded-lg border border-white/15 bg-transparent px-4 py-2.5 text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none disabled:opacity-50"
         />

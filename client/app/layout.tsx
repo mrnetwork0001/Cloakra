@@ -4,7 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Cloakra — Shielded Capital Allocation on Starknet",
   description:
-    "Grants, bug bounties, and contributor payouts settled privately through the STRK20 privacy pool, with selective viewing keys for audit.",
+    "Grants, bug bounties, and contributor payouts settled privately through the STRK20 privacy pool on Starknet mainnet. Who receives and how much stays private; the public legs stay public.",
+  openGraph: {
+    title: "Cloakra — Shielded Capital Allocation on Starknet",
+    description:
+      "Private team payouts, bounties, and grants over the STRK20 privacy pool — live on Starknet mainnet.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
