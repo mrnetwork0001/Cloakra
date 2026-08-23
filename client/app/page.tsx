@@ -6,7 +6,7 @@ const MODULES = [
     name: "StealthSplit",
     tag: "Team payouts",
     blurb:
-      "One shielded balance split atomically into per-contributor balances. All transfers land or none do — and co-workers cannot read each other's allocation.",
+      "One shielded balance split atomically into per-contributor balances. All transfers land or none do — and inside the pool, co-workers can't read each other's allocation.",
     icon: (
       <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M4 12h6M14 5l6 3.5M14 12h6M14 19l6-3.5" />
@@ -21,7 +21,7 @@ const MODULES = [
     name: "GhostBounty",
     tag: "Security research",
     blurb:
-      "Bounty payouts to a researcher's shielded balance — disclosing a vulnerability no longer deanonymizes the wallet that gets paid for it.",
+      "Bounty payouts land in the researcher's shielded balance — the payout transaction names no recipient, no amount, and nothing linking them to your program.",
     icon: (
       <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M12 3l7 2.8v5.4c0 4.3-3 7.5-7 9-4-1.5-7-4.7-7-9V5.8L12 3z" />
@@ -33,7 +33,7 @@ const MODULES = [
     name: "StealthGrant",
     tag: "Grant rounds",
     blurb:
-      "A whole grant round disbursed in one atomic transaction. Each grantee sees their own award; nobody sees the list or the amounts.",
+      "A whole grant round disbursed in one atomic transaction. Each grantee sees only their own award — the recipient list and per-grant amounts never appear on-chain. Only the org's total deposit is public.",
     icon: (
       <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <rect x="4" y="9" width="16" height="11" rx="2" />
@@ -61,7 +61,7 @@ const PROBLEMS = [
 const STEPS = [
   {
     step: "Shield",
-    text: "The org deposits STRK into the STRK20 pool. This leg is public — address and amount — and it's the last thing anyone outside sees.",
+    text: "The org deposits STRK into the STRK20 pool. This leg is public — address and amount. From here on, activity inside the pool carries no readable link back to it.",
   },
   {
     step: "Allocate privately",
@@ -93,7 +93,7 @@ export default function Home() {
     <>
       <header className="sticky top-0 z-10 border-b border-white/10 bg-neutral-950/80 backdrop-blur">
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <a href="#top" className="flex items-center gap-2 text-white">
+          <a href="#" className="flex items-center gap-2 text-white">
             <ShieldMark className="size-6 text-emerald-400" />
             <span className="font-semibold tracking-tight">Cloakra</span>
           </a>
@@ -120,7 +120,7 @@ export default function Home() {
           />
           <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-xs font-medium text-emerald-200/80">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-60" />
               <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
             </span>
             Live on Starknet Mainnet · STRK20 Privacy Pool
@@ -129,7 +129,7 @@ export default function Home() {
             Pay the team.
             <br />
             <span className="bg-gradient-to-r from-emerald-300 to-white bg-clip-text text-transparent">
-              Publish nothing.
+              Publish no salary table.
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/60">
@@ -159,7 +159,7 @@ export default function Home() {
               ["100%", "wallet-signed; no server keys"],
               ["26", "tests on the money path"],
             ].map(([n, label]) => (
-              <div key={label} className="bg-white/[0.02] px-4 py-4">
+              <div key={label} className="flex flex-col bg-white/[0.02] px-4 py-4">
                 <dt className="order-last mt-1 text-xs text-white/40">{label}</dt>
                 <dd className="text-2xl font-semibold text-white">{n}</dd>
               </div>
@@ -185,12 +185,13 @@ export default function Home() {
         {/* Modules */}
         <section id="modules" className="scroll-mt-20 border-t border-white/10 py-16">
           <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-            Three modules, one set of verified rails
+            Three modules, one set of rails
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/50">
-            Every module is a framing of the same mainnet-proven primitives —
-            shield, private transfer, atomic split, unshield — signed by your
-            own wallet, never by a server.
+            Shield and unshield are hash-proven on mainnet (see the proof
+            below); private transfers and the atomic split ride the same
+            wallet API against the same pool. Every operation is signed by
+            your own wallet, never by a server.
           </p>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {MODULES.map((m) => (

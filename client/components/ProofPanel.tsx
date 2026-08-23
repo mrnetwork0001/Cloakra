@@ -74,7 +74,7 @@ export default function ProofPanel() {
   if (strk20.transactions.length === 0) return null;
 
   return (
-    <section className="mt-16">
+    <section>
       <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
         Submission proof
       </h2>
