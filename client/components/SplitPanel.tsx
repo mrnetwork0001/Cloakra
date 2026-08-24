@@ -17,6 +17,7 @@ import { usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
 import { parseRecipientsCsv } from "@/lib/csv";
 import TxOutcome from "./TxOutcome";
+import { recordRun } from "@/lib/runs";
 
 const MAX_RECIPIENTS = 10;
 
@@ -160,6 +161,17 @@ export default function SplitPanel({
     try {
       const outcome = await executeStrk20(account, buildSplit(parsed), title);
       setSettledCount(parsed.length);
+      if (outcome.kind === "confirmed" || outcome.kind === "submitted") {
+        // Module store: the only durable copy of who this run paid — the
+        // shielded tx cannot reproduce it, and panels unmount freely.
+        recordRun({
+          operation: title,
+          txHash: outcome.txHash,
+          payer: address,
+          recipients: parsed,
+          outcomeKind: outcome.kind,
+        });
+      }
       setPhase({ kind: "done", outcome });
     } catch (err) {
       const kind = walletErrorKind(err);

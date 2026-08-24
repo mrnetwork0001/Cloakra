@@ -17,6 +17,7 @@ export type SubmissionKind =
   | "signing"
   | "pending"
   | "not_sent"
+  | "signed" // off-chain signature completed (e.g. receipts)
   | SubmitOutcome["kind"];
 
 export interface Submission {

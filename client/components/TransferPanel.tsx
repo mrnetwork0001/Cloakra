@@ -14,6 +14,7 @@ import {
   type PanelPhase,
 } from "@/lib/strk20";
 import { usePoolFee } from "@/lib/hooks";
+import { recordRun } from "@/lib/runs";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 
@@ -68,6 +69,15 @@ export default function TransferPanel({
     setPhase({ kind: "submitting" });
     try {
       const outcome = await executeStrk20(account, [buildTransfer(to, raw)], title);
+      if (outcome.kind === "confirmed" || outcome.kind === "submitted") {
+        recordRun({
+          operation: title,
+          txHash: outcome.txHash,
+          payer: address,
+          recipients: [{ address: to, raw }],
+          outcomeKind: outcome.kind,
+        });
+      }
       setPhase({ kind: "done", outcome });
     } catch (err) {
       const kind = walletErrorKind(err);

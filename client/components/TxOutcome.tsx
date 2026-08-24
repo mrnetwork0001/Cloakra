@@ -16,6 +16,7 @@ export default function TxOutcome({
   confirmedBody,
   revertedBody = "The transaction was included but reverted — no value moved. A pool-side check rejected it at execution.",
   onBack,
+  children,
 }: {
   outcome: SubmitOutcome;
   operation: string;
@@ -23,6 +24,8 @@ export default function TxOutcome({
   confirmedBody: string;
   revertedBody?: string;
   onBack: () => void;
+  /** Rendered inside the CONFIRMED screen only (e.g. signed receipts). */
+  children?: React.ReactNode;
 }) {
   const voyager = (
     <a
@@ -52,6 +55,7 @@ export default function TxOutcome({
         </h2>
         <p className="mt-3 text-sm text-white/70">{confirmedBody}</p>
         <p className="mt-2">{voyager}</p>
+        {children}
         {back}
       </section>
     );

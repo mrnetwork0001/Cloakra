@@ -9,6 +9,7 @@ import {
 } from "@/lib/submissions";
 import { shorten, voyagerTx } from "@/lib/config";
 import WalletPanel, { type WalletSession } from "./WalletPanel";
+import ReceiptsBlock from "./ReceiptsBlock";
 import ShieldPanel from "./ShieldPanel";
 import TransferPanel from "./TransferPanel";
 import SplitPanel from "./SplitPanel";
@@ -58,7 +59,9 @@ export default function AppShell() {
               ? "awaiting receipt"
               : s.kind === "not_sent"
                 ? "not sent (failed or declined before broadcast)"
-                : s.kind}
+                : s.kind === "signed"
+                  ? "signed (off-chain)"
+                  : s.kind}
           {s.txHash ? (
             <>
               {" · "}
@@ -74,6 +77,10 @@ export default function AppShell() {
           ) : null}
         </p>
       ))}
+
+      {session?.strk20 ? (
+        <ReceiptsBlock account={session.account} address={session.address} />
+      ) : null}
 
       {session?.strk20 && session.wrongChain ? (
         <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
