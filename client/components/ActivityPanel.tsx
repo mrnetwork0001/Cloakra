@@ -75,7 +75,38 @@ export default function ActivityPanel({ address }: { address: string }) {
             </p>
           )
         ) : (
-          <ul className="space-y-px overflow-hidden rounded-lg border border-white/10">
+          <>
+            {(() => {
+              const strk = state.entries.filter((e) => sameFelt(e.token, STRK_TOKEN_ADDRESS));
+              const dep = strk.filter((e) => e.kind === "deposit");
+              const wdr = strk.filter((e) => e.kind === "withdrawal");
+              const sum = (xs: typeof strk) => xs.reduce((a, e) => a + e.amount, 0n);
+              const other = state.entries.length - strk.length;
+              return (
+                <dl className="mb-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/10 text-sm">
+                  <div className="bg-white/[0.02] px-4 py-3">
+                    <dt className="text-xs text-white/40">Shielded (public deposits)</dt>
+                    <dd className="mt-0.5 text-white">
+                      {formatTokenAmount(sum(dep))} STRK
+                      <span className="ml-1 text-xs text-white/35">· {dep.length} tx</span>
+                    </dd>
+                  </div>
+                  <div className="bg-white/[0.02] px-4 py-3">
+                    <dt className="text-xs text-white/40">Unshielded (public withdrawals)</dt>
+                    <dd className="mt-0.5 text-white">
+                      {formatTokenAmount(sum(wdr))} STRK
+                      <span className="ml-1 text-xs text-white/35">· {wdr.length} tx</span>
+                    </dd>
+                  </div>
+                  {other > 0 ? (
+                    <div className="col-span-2 bg-white/[0.02] px-4 py-2 text-xs text-white/35">
+                      +{other} non-STRK entr{other === 1 ? "y" : "ies"} not totaled
+                    </div>
+                  ) : null}
+                </dl>
+              );
+            })()}
+            <ul className="space-y-px overflow-hidden rounded-lg border border-white/10">
             {state.entries.map((entry, i) => (
               <li
                 // One tx can legally carry several same-kind events (batch
@@ -106,6 +137,7 @@ export default function ActivityPanel({ address }: { address: string }) {
               </li>
             ))}
           </ul>
+          </>
         )}
         {state.kind === "loaded" && state.truncated ? (
           <p className="mt-2 text-xs text-white/35">
