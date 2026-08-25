@@ -46,8 +46,30 @@ export interface FootprintEntry {
 const DATA_WIDTH = { deposit: 1, withdrawal: 4 } as const;
 const AMOUNT_INDEX = { deposit: 0, withdrawal: 3 } as const;
 
+/** Pure per-event parser — returns null for layout drift (unknown widths). */
+export function parseFootprintEvent(ev: {
+  keys: string[];
+  data: string[];
+  transaction_hash: string;
+  block_number?: number;
+}): FootprintEntry | null {
+  const kind =
+    BigInt(ev.keys[0]) === BigInt(DEPOSIT_SELECTOR)
+      ? ("deposit" as const)
+      : ("withdrawal" as const);
+  if (ev.data.length !== DATA_WIDTH[kind]) return null;
+  return {
+    kind,
+    token: ev.keys[2],
+    amount: BigInt(ev.data[AMOUNT_INDEX[kind]]),
+    txHash: ev.transaction_hash,
+    blockNumber: ev.block_number ?? null,
+  };
+}
+
 export async function fetchPublicFootprint(
   address: string,
+  options?: { maxLookbackBlocks?: number },
 ): Promise<{ entries: FootprintEntry[]; truncated: boolean; skipped: number }> {
   const provider = getProvider();
   const latest = await provider.getBlockNumber();
@@ -60,9 +82,14 @@ export async function fetchPublicFootprint(
   let callsLeft = MAX_RPC_CALLS;
   let hi = latest;
   let truncated = false;
+  // A caller that only needs recent history (summaries, checks) can bound
+  // the scan instead of walking back to the pool's deployment era.
+  const floor = options?.maxLookbackBlocks
+    ? Math.max(POOL_DEPLOYMENT_BLOCK, latest - options.maxLookbackBlocks)
+    : POOL_DEPLOYMENT_BLOCK;
 
-  while (hi >= POOL_DEPLOYMENT_BLOCK) {
-    const lo = Math.max(POOL_DEPLOYMENT_BLOCK, hi - SUB_RANGE_BLOCKS + 1);
+  while (hi >= floor) {
+    const lo = Math.max(floor, hi - SUB_RANGE_BLOCKS + 1);
 
     let continuationToken: string | undefined;
     do {
@@ -82,23 +109,14 @@ export async function fetchPublicFootprint(
       });
 
       for (const ev of page.events) {
-        const kind =
-          BigInt(ev.keys[0]) === BigInt(DEPOSIT_SELECTOR)
-            ? ("deposit" as const)
-            : ("withdrawal" as const);
-        if (ev.data.length !== DATA_WIDTH[kind]) {
+        const parsed = parseFootprintEvent(ev);
+        if (parsed === null) {
           // Layout drift (pool upgrade?) — omit rather than show wrong numbers.
           skipped++;
-          console.warn("[cloakra] unexpected", kind, "event data width:", ev.data.length);
+          console.warn("[cloakra] unexpected event data width:", ev.data.length);
           continue;
         }
-        entries.push({
-          kind,
-          token: ev.keys[2],
-          amount: BigInt(ev.data[AMOUNT_INDEX[kind]]),
-          txHash: ev.transaction_hash,
-          blockNumber: ev.block_number ?? null,
-        });
+        entries.push(parsed);
       }
       continuationToken = page.continuation_token;
     } while (continuationToken);
