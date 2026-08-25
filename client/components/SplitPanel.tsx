@@ -18,6 +18,7 @@ import { COPY } from "@/lib/copy";
 import { parseRecipientsCsv } from "@/lib/csv";
 import TxOutcome from "./TxOutcome";
 import { recordRun } from "@/lib/runs";
+import { usePrivacyGate, PrivacyWarnings } from "./PrivacyGate";
 
 const MAX_RECIPIENTS = 10;
 
@@ -57,22 +58,32 @@ export default function SplitPanel({
   ]);
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
+  const gate = usePrivacyGate(address);
   const [settledCount, setSettledCount] = useState(0);
   const [csvOpen, setCsvOpen] = useState(false);
   const [csvText, setCsvText] = useState("");
   const [csvNote, setCsvNote] = useState<string | null>(null);
 
-  const setRow = useCallback((id: number, patch: Partial<Row>) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  }, []);
+  const setRow = useCallback(
+    (id: number, patch: Partial<Row>) => {
+      setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+      gate.clear();
+    },
+    [gate],
+  );
 
   const addRow = useCallback(() => {
     setRows((prev) => (prev.length < MAX_RECIPIENTS ? [...prev, newRow()] : prev));
-  }, [newRow]);
+    gate.clear();
+  }, [newRow, gate]);
 
-  const removeRow = useCallback((id: number) => {
-    setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
-  }, []);
+  const removeRow = useCallback(
+    (id: number) => {
+      setRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
+      gate.clear();
+    },
+    [gate],
+  );
 
   const onBack = useCallback(() => {
     // Reset to a blank form: a pre-filled payroll behind an enabled submit
@@ -86,6 +97,7 @@ export default function SplitPanel({
 
   const onApplyCsv = useCallback(() => {
     setCsvNote(null);
+    gate.clear();
     const { recipients, errors } = parseRecipientsCsv(csvText, MAX_RECIPIENTS);
     if (errors.length) {
       setPhase({
@@ -110,7 +122,7 @@ export default function SplitPanel({
       `${recipients.length} recipient${recipients.length === 1 ? "" : "s"} filled from CSV — replacing any typed rows. Review before submitting.`,
     );
     setPhase({ kind: "form" });
-  }, [csvText]);
+  }, [csvText, gate]);
 
   // Best-effort running total for display; invalid rows count as 0.
   const total = rows.reduce((sum, r) => {
@@ -121,7 +133,7 @@ export default function SplitPanel({
     }
   }, 0n);
 
-  const onSplit = useCallback(async () => {
+  const onSplit = useCallback(async (force = false) => {
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -155,6 +167,15 @@ export default function SplitPanel({
       }
       seen.add(to);
       parsed.push({ address: to, raw });
+    }
+
+    // Check each row AND the total — either can echo a public deposit.
+    const gateAmounts = [...parsed.map((p) => p.raw), parsed.reduce((a, p) => a + p.raw, 0n)];
+    if (!force && !(await gate.passes(gateAmounts, "transfer"))) return;
+    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    if (!sameFelt(account.address, address)) {
+      setPhase({ kind: "error", message: COPY.accountChanged });
+      return;
     }
 
     setPhase({ kind: "submitting" });
@@ -311,7 +332,9 @@ export default function SplitPanel({
       <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
         Whether a batched split pays the fee once or per transfer is settled by
         the pool — Ready shows the exact total before you sign.{" "}
-        {COPY.recipientPrereq}
+        {COPY.recipientPrereq} Advise recipients not to unshield exact row
+        amounts right away — matching withdrawals let observers partition the
+        split from outside.
       </p>
 
       {phase.kind === "error" ? (
@@ -320,19 +343,24 @@ export default function SplitPanel({
         </p>
       ) : null}
 
+      <PrivacyWarnings gate={gate} onProceed={() => onSplit(true)} proceedLabel="Split anyway" disabled={disabled || phase.kind === "submitting"} />
+
       <button
         type="button"
-        onClick={onSplit}
+        onClick={() => onSplit()}
         disabled={
           disabled ||
           phase.kind === "submitting" ||
+          gate.checking ||
           rows.some((r) => !r.address.trim() || !r.amount.trim())
         }
         className="mt-4 w-full rounded-lg border border-white/20 bg-white/[0.05] px-4 py-2.5 font-medium text-white transition hover:border-white/40 hover:bg-white/[0.08] disabled:opacity-50"
       >
         {phase.kind === "submitting"
           ? "Waiting for wallet…"
-          : `Split to ${rows.length} recipient${rows.length === 1 ? "" : "s"}`}
+          : gate.checking
+            ? "Checking privacy…"
+            : `Split to ${rows.length} recipient${rows.length === 1 ? "" : "s"}`}
       </button>
     </section>
   );

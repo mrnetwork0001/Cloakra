@@ -15,6 +15,7 @@ import {
 } from "@/lib/strk20";
 import { usePoolFee } from "@/lib/hooks";
 import { recordRun } from "@/lib/runs";
+import { usePrivacyGate, PrivacyWarnings } from "./PrivacyGate";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 
@@ -37,6 +38,7 @@ export default function TransferPanel({
   const [amount, setAmount] = useState("");
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
+  const gate = usePrivacyGate(address);
 
   const onBack = useCallback(() => {
     // Clear the form: a pre-filled, enabled form after a submission is a
@@ -46,7 +48,7 @@ export default function TransferPanel({
     setPhase({ kind: "form" });
   }, []);
 
-  const onSend = useCallback(async () => {
+  const onSend = useCallback(async (force = false) => {
     // The wallet can switch accounts under us; never sign for a different
     // account than the one this form was validated against.
     if (!sameFelt(account.address, address)) {
@@ -63,6 +65,13 @@ export default function TransferPanel({
       raw = parseTokenAmount(amount);
     } catch (err) {
       setPhase({ kind: "error", message: (err as Error).message });
+      return;
+    }
+
+    if (!force && !(await gate.passes([raw], "transfer"))) return;
+    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    if (!sameFelt(account.address, address)) {
+      setPhase({ kind: "error", message: COPY.accountChanged });
       return;
     }
 
@@ -121,7 +130,10 @@ export default function TransferPanel({
         <input
           type="text"
           value={recipient}
-          onChange={(e) => setRecipient(e.target.value)}
+          onChange={(e) => {
+            setRecipient(e.target.value);
+            gate.clear();
+          }}
           placeholder="Recipient address (0x…)"
           aria-label="Recipient address"
           disabled={disabled || phase.kind === "submitting"}
@@ -131,7 +143,10 @@ export default function TransferPanel({
           type="text"
           inputMode="decimal"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            gate.clear();
+          }}
           placeholder="Amount in STRK"
           aria-label="Amount of STRK to send"
           disabled={disabled || phase.kind === "submitting"}
@@ -156,18 +171,25 @@ export default function TransferPanel({
         </p>
       ) : null}
 
+      <PrivacyWarnings gate={gate} onProceed={() => onSend(true)} disabled={disabled || phase.kind === "submitting"} />
+
       <button
         type="button"
-        onClick={onSend}
+        onClick={() => onSend()}
         disabled={
           disabled ||
           phase.kind === "submitting" ||
+          gate.checking ||
           !recipient.trim() ||
           !amount.trim()
         }
         className="mt-4 w-full rounded-lg border border-white/20 bg-white/[0.05] px-4 py-2.5 font-medium text-white transition hover:border-white/40 hover:bg-white/[0.08] disabled:opacity-50"
       >
-        {phase.kind === "submitting" ? "Waiting for wallet…" : "Send privately"}
+        {phase.kind === "submitting"
+          ? "Waiting for wallet…"
+          : gate.checking
+            ? "Checking privacy…"
+            : "Send privately"}
       </button>
     </section>
   );

@@ -16,6 +16,7 @@ import {
 import { usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
+import { usePrivacyGate, PrivacyWarnings } from "./PrivacyGate";
 
 /** Unshield: private → public. The one flow whose output leg is public. */
 export default function WithdrawPanel({
@@ -31,6 +32,7 @@ export default function WithdrawPanel({
   const [amount, setAmount] = useState("");
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
+  const gate = usePrivacyGate(address);
 
   const onBack = useCallback(() => {
     setRecipient("");
@@ -38,7 +40,7 @@ export default function WithdrawPanel({
     setPhase({ kind: "form" });
   }, []);
 
-  const onWithdraw = useCallback(async () => {
+  const onWithdraw = useCallback(async (force = false) => {
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -51,6 +53,17 @@ export default function WithdrawPanel({
       raw = parseTokenAmount(amount);
     } catch (err) {
       setPhase({ kind: "error", message: (err as Error).message });
+      return;
+    }
+
+    if (
+      !force &&
+      !(await gate.passes([raw], "withdraw", { toSelf: sameFelt(to, address) }))
+    )
+      return;
+    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    if (!sameFelt(account.address, address)) {
+      setPhase({ kind: "error", message: COPY.accountChanged });
       return;
     }
 
@@ -107,7 +120,10 @@ export default function WithdrawPanel({
           <input
             type="text"
             value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
+            onChange={(e) => {
+              setRecipient(e.target.value);
+              gate.clear();
+            }}
             placeholder="Public recipient (0x…)"
             aria-label="Public recipient address"
             disabled={disabled || phase.kind === "submitting"}
@@ -129,7 +145,10 @@ export default function WithdrawPanel({
           type="text"
           inputMode="decimal"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            gate.clear();
+          }}
           placeholder="Amount in STRK"
           aria-label="Amount of STRK to unshield"
           disabled={disabled || phase.kind === "submitting"}
@@ -150,18 +169,25 @@ export default function WithdrawPanel({
         </p>
       ) : null}
 
+      <PrivacyWarnings gate={gate} onProceed={() => onWithdraw(true)} proceedLabel="Unshield anyway" disabled={disabled || phase.kind === "submitting"} />
+
       <button
         type="button"
-        onClick={onWithdraw}
+        onClick={() => onWithdraw()}
         disabled={
           disabled ||
           phase.kind === "submitting" ||
+          gate.checking ||
           !recipient.trim() ||
           !amount.trim()
         }
         className="mt-4 w-full rounded-lg border border-white/20 bg-white/[0.05] px-4 py-2.5 font-medium text-white transition hover:border-white/40 hover:bg-white/[0.08] disabled:opacity-50"
       >
-        {phase.kind === "submitting" ? "Waiting for wallet…" : "Unshield"}
+        {phase.kind === "submitting"
+          ? "Waiting for wallet…"
+          : gate.checking
+            ? "Checking privacy…"
+            : "Unshield"}
       </button>
     </section>
   );
