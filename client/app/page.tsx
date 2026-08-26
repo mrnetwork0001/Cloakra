@@ -112,7 +112,7 @@ function HexRain() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none font-mono text-[11px] leading-6 tracking-widest whitespace-pre text-emerald-300/30 select-none [mask-image:linear-gradient(to_bottom,black,transparent)]"
+      className="pointer-events-none font-mono text-[11px] leading-6 tracking-widest whitespace-pre text-white/25 select-none [mask-image:linear-gradient(to_bottom,black,transparent)]"
     >
       {rows.join("\n")}
     </div>
@@ -125,7 +125,7 @@ export default function Home() {
       <header className="sticky top-0 z-10 border-b border-white/10 bg-black/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-10">
           <a href="#" className="flex items-center gap-2 text-white">
-            <ShieldMark className="size-6 text-emerald-400" />
+            <ShieldMark className="size-6 text-white" />
             <span className="font-semibold tracking-tight">Cloakra</span>
           </a>
           <div className="hidden items-center gap-6 text-sm text-white/50 sm:flex">
@@ -150,9 +150,7 @@ export default function Home() {
             <h1 className="max-w-2xl text-6xl font-semibold tracking-tight text-white sm:text-7xl">
               Pay the team.
               <br />
-              <span className="bg-gradient-to-r from-emerald-300 to-white bg-clip-text text-transparent">
-                Publish no salary table.
-              </span>
+              Publish no salary table.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/60">
               Cloakra is a shielded capital-allocation desk for organizations on
@@ -178,10 +176,10 @@ export default function Home() {
           </div>
           <div className="hidden lg:block">
             <div className="rounded-2xl border border-white/10 bg-neutral-950 p-6">
-              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-xs font-medium text-emerald-200/80">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/70">
                 <span className="relative flex size-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 motion-safe:animate-ping" />
-                  <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-50 motion-safe:animate-ping" />
+                  <span className="relative inline-flex size-2 rounded-full bg-white/90" />
                 </span>
                 Live on Starknet Mainnet
               </p>
@@ -223,7 +221,7 @@ export default function Home() {
                 className={`grid items-center gap-8 lg:grid-cols-2 ${i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}
               >
                 <div>
-                  <p className="text-xs font-medium tracking-widest text-emerald-300/70 uppercase">
+                  <p className="text-xs font-medium tracking-widest text-white/40 uppercase">
                     Step {i + 1}
                   </p>
                   <h3 className="mt-2 text-xl font-medium text-white">{s.step}</h3>
@@ -252,7 +250,7 @@ export default function Home() {
             {MODULES.map((m, i) => (
               <div
                 key={m.name}
-                className="rounded-2xl border border-white/10 bg-neutral-950 p-5 transition hover:border-emerald-400/25"
+                className="rounded-2xl border border-white/10 bg-neutral-950 p-5 transition hover:border-white/25"
               >
                 <AuroraPanel variant={(i % 3) as 0 | 1 | 2} className="h-24" />
                 <div className="mt-4 flex items-center justify-between">
