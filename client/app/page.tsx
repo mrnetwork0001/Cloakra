@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ProofPanel from "@/components/ProofPanel";
+import LiveFee from "@/components/LiveFee";
 
 const MODULES = [
   {
@@ -165,6 +166,7 @@ export default function Home() {
               </div>
             ))}
           </dl>
+          <LiveFee />
         </section>
 
         {/* Problem */}
