@@ -15,7 +15,7 @@ export default function AppPage() {
       <header className="sticky top-0 z-10 border-b border-white/10 bg-black/80 backdrop-blur">
         <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2 text-white">
-            <svg viewBox="0 0 32 32" className="size-6 text-emerald-400" aria-hidden>
+            <svg viewBox="0 0 32 32" className="size-6 text-white" aria-hidden>
               <path
                 d="M16 5l9 3.5v7c0 5.5-3.8 9.6-9 11.5-5.2-1.9-9-6-9-11.5v-7L16 5z"
                 fill="none"
