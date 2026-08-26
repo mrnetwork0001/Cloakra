@@ -5,3 +5,14 @@
     scroll-behavior: smooth;
   }
 }
+
+/* Display face for headings — the dev-tool reference's typographic voice. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-grotesk), var(--font-inter), sans-serif;
+}
+
+::selection {
+  background: rgba(52, 211, 153, 0.25);
+}

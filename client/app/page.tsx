@@ -122,8 +122,8 @@ function HexRain() {
 export default function Home() {
   return (
     <>
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-neutral-950/85 backdrop-blur">
-        <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/80 backdrop-blur">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-10">
           <a href="#" className="flex items-center gap-2 text-white">
             <ShieldMark className="size-6 text-emerald-400" />
             <span className="font-semibold tracking-tight">Cloakra</span>
@@ -135,7 +135,7 @@ export default function Home() {
             <a className="transition hover:text-white" href="#faq">FAQ</a>
           </div>
           <Link
-            className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-neutral-950 transition hover:bg-white/90"
+            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition hover:bg-white/90"
             href="/app"
           >
             Open the app
@@ -143,11 +143,11 @@ export default function Home() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6">
+      <main className="mx-auto max-w-6xl px-6 md:px-10">
         {/* Hero */}
-        <section className="grid items-center gap-10 py-20 sm:py-24 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid items-center gap-12 py-24 sm:py-32 lg:grid-cols-[1.2fr_0.8fr]">
           <div>
-            <h1 className="max-w-2xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
+            <h1 className="max-w-2xl text-6xl font-semibold tracking-tight text-white sm:text-7xl">
               Pay the team.
               <br />
               <span className="bg-gradient-to-r from-emerald-300 to-white bg-clip-text text-transparent">
@@ -163,13 +163,13 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/app"
-                className="rounded-lg bg-white px-5 py-2.5 font-medium text-neutral-950 transition hover:bg-white/90"
+                className="rounded-full bg-white px-6 py-2.5 font-medium text-black transition hover:bg-white/90"
               >
                 Open the app
               </Link>
               <a
                 href="#proof"
-                className="rounded-lg border border-white/20 px-5 py-2.5 font-medium text-white/80 transition hover:border-white/40 hover:text-white"
+                className="rounded-full border border-white/20 px-6 py-2.5 font-medium text-white/80 transition hover:border-white/40 hover:text-white"
               >
                 Verify the mainnet proof
               </a>
@@ -177,7 +177,7 @@ export default function Home() {
             <LiveFee />
           </div>
           <div className="hidden lg:block">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <div className="rounded-2xl border border-white/10 bg-neutral-950 p-6">
               <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-xs font-medium text-emerald-200/80">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 motion-safe:animate-ping" />
@@ -203,7 +203,7 @@ export default function Home() {
             ].map((chip) => (
               <li
                 key={chip}
-                className="rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5"
+                className="rounded-full border border-white/10 bg-neutral-950 px-4 py-1.5"
               >
                 {chip}
               </li>
@@ -212,8 +212,8 @@ export default function Home() {
         </section>
 
         {/* Lifecycle as alternating feature rows */}
-        <section id="how" className="scroll-mt-20 border-t border-white/10 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+        <section id="how" className="scroll-mt-20 border-t border-white/10 py-24">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Engineered for honest privacy
           </h2>
           <div className="mt-10 space-y-16">
@@ -238,11 +238,11 @@ export default function Home() {
         </section>
 
         {/* Modules */}
-        <section id="modules" className="scroll-mt-20 border-t border-white/10 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+        <section id="modules" className="scroll-mt-20 border-t border-white/10 py-24">
+          <h2 className="text-center text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Three modules, one set of rails
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/50">
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/50">
             Shield and unshield are hash-proven on mainnet (see the proof
             below); private transfers and the atomic split ride the same
             wallet API against the same pool. Every operation is signed by
@@ -252,7 +252,7 @@ export default function Home() {
             {MODULES.map((m, i) => (
               <div
                 key={m.name}
-                className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-emerald-400/25"
+                className="rounded-2xl border border-white/10 bg-neutral-950 p-5 transition hover:border-emerald-400/25"
               >
                 <AuroraPanel variant={(i % 3) as 0 | 1 | 2} className="h-24" />
                 <div className="mt-4 flex items-center justify-between">
@@ -268,13 +268,13 @@ export default function Home() {
         </section>
 
         {/* Problems — the reference's testimonial slot, honestly used */}
-        <section className="border-t border-white/10 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+        <section className="border-t border-white/10 py-24">
+          <h2 className="text-center text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Every payout is a disclosure
           </h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {PROBLEMS.map((p) => (
-              <div key={p.title} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <div key={p.title} className="rounded-2xl border border-white/10 bg-neutral-950 p-5">
                 <h3 className="font-medium text-white">{p.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/50">{p.text}</p>
               </div>
@@ -283,8 +283,8 @@ export default function Home() {
         </section>
 
         {/* Hidden vs visible */}
-        <section className="border-t border-white/10 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+        <section className="border-t border-white/10 py-24">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             What&apos;s private, what isn&apos;t
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/50">
@@ -294,7 +294,7 @@ export default function Home() {
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 bg-white/[0.02] text-white/40">
+                <tr className="border-b border-white/10 bg-neutral-950 text-white/40">
                   <th className="px-4 py-3 font-medium">Private (inside the pool)</th>
                   <th className="px-4 py-3 font-medium">Public (on-chain)</th>
                 </tr>
@@ -316,20 +316,20 @@ export default function Home() {
         </section>
 
         {/* Proof */}
-        <section id="proof" className="scroll-mt-20 border-t border-white/10 py-16">
+        <section id="proof" className="scroll-mt-20 border-t border-white/10 py-24">
           <ProofPanel />
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-20 border-t border-white/10 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
+        <section id="faq" className="scroll-mt-20 border-t border-white/10 py-24">
+          <h2 className="text-center text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Frequently asked questions
           </h2>
-          <div className="mt-6 space-y-2">
+          <div className="mx-auto mt-8 max-w-3xl space-y-2">
             {FAQ.map((f) => (
               <details
                 key={f.q}
-                className="group rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4"
+                className="group rounded-xl border border-white/10 bg-neutral-950 px-5 py-4"
               >
                 <summary className="cursor-pointer list-none text-sm font-medium text-white/80 transition group-open:text-white [&::-webkit-details-marker]:hidden">
                   {f.q}
@@ -341,14 +341,14 @@ export default function Home() {
         </section>
 
         {/* Final CTA */}
-        <section className="border-t border-white/10 py-20 text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        <section className="border-t border-white/10 py-28 text-center">
+          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             Pay privately. Prove it honestly.
           </h2>
           <div className="mt-6 flex justify-center gap-3">
             <Link
               href="/app"
-              className="rounded-lg bg-white px-5 py-2.5 font-medium text-neutral-950 transition hover:bg-white/90"
+              className="rounded-full bg-white px-6 py-2.5 font-medium text-black transition hover:bg-white/90"
             >
               Open the app
             </Link>
@@ -356,7 +356,7 @@ export default function Home() {
               href="https://github.com/mrnetwork0001/Cloakra"
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg border border-white/20 px-5 py-2.5 font-medium text-white/80 transition hover:border-white/40 hover:text-white"
+              className="rounded-full border border-white/20 px-6 py-2.5 font-medium text-white/80 transition hover:border-white/40 hover:text-white"
             >
               Read the code
             </a>

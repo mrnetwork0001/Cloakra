@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const grotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-grotesk",
+});
 
 export const metadata: Metadata = {
   title: "Cloakra — Shielded Capital Allocation on Starknet",
@@ -17,8 +24,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="min-h-dvh bg-neutral-950 text-white antialiased">
+    <html lang="en" className={`${inter.variable} ${grotesk.variable}`}>
+      <body className="min-h-dvh bg-black font-[family-name:var(--font-inter)] text-white antialiased">
         {children}
       </body>
     </html>

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function AppPage() {
   return (
     <>
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-neutral-950/80 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/80 backdrop-blur">
         <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2 text-white">
             <svg viewBox="0 0 32 32" className="size-6 text-emerald-400" aria-hidden>
