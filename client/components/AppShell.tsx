@@ -177,16 +177,18 @@ export default function AppShell() {
 
           {tab === "Treasury" ? (
             <>
-              <ShieldPanel
-                account={session.account}
-                address={session.address}
-                disabled={session.wrongChain || busy}
-              />
-              <WithdrawPanel
-                account={session.account}
-                address={session.address}
-                disabled={session.wrongChain || busy}
-              />
+              <div className="grid gap-6 lg:grid-cols-2">
+                <ShieldPanel
+                  account={session.account}
+                  address={session.address}
+                  disabled={session.wrongChain || busy}
+                />
+                <WithdrawPanel
+                  account={session.account}
+                  address={session.address}
+                  disabled={session.wrongChain || busy}
+                />
+              </div>
               <ActivityPanel address={session.address} />
             </>
           ) : null}
