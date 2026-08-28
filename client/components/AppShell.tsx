@@ -14,6 +14,7 @@ import TransferPanel from "./TransferPanel";
 import SplitPanel from "./SplitPanel";
 import WithdrawPanel from "./WithdrawPanel";
 import ActivityPanel from "./ActivityPanel";
+import Orientation from "./Orientation";
 
 export type { WalletSession };
 
@@ -80,6 +81,8 @@ export default function AppShell() {
           Wallet is on the wrong network — switch to mainnet to use Cloakra.
         </p>
       ) : null}
+
+      {!session || !session.strk20 ? <Orientation /> : null}
 
       {session && session.strk20 ? (
         <div key={session.address} className="space-y-6">
