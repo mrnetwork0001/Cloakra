@@ -77,7 +77,7 @@ Cloakra/
 ## Submission checklist
 
 - [x] Public repo, Apache 2.0
-- [ ] 3 live mainnet transaction hashes recorded in `strk20.json`
+- [x] 3 live mainnet transaction hashes recorded in `strk20.json` (all `ACCEPTED_ON_L1` + `SUCCEEDED`)
 - [ ] Live public web demo
 - [ ] 3-minute video showcase (human voiceover)
 
