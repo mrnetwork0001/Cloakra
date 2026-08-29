@@ -8,6 +8,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+// Pass the live demo URL to check public reachability:
+//   node scripts/preflight.mjs --demo-url https://<host>
+// It is deliberately NOT stored in this repo — supply it at run time.
+const demoUrlArg = (() => {
+  const i = process.argv.indexOf("--demo-url");
+  return i !== -1 ? process.argv[i + 1] : undefined;
+})();
 const POOL = 0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812an;
 const PUBLIC_RPCS = [
   "https://rpc.starknet.lava.build",
@@ -113,6 +120,38 @@ record(
       }
     }),
 );
+
+// ---- live demo reachable WITHOUT auth ----
+if (demoUrlArg) {
+  try {
+    const res = await fetch(demoUrlArg, { redirect: "follow" });
+    const body = await res.text();
+    // Vercel's protection wall answers 401/403, or serves an SSO interstitial.
+    const walled =
+      res.status === 401 ||
+      res.status === 403 ||
+      /vercel.*(authentication|sso)|_vercel\/sso/i.test(body);
+    record(
+      "demo URL is publicly reachable (deployment protection OFF)",
+      res.ok && !walled,
+      walled ? `HTTP ${res.status} — still behind deployment protection` : `HTTP ${res.status}`,
+    );
+    record(
+      "demo page renders Cloakra content",
+      /Cloakra/.test(body),
+      "",
+    );
+  } catch (e) {
+    record("demo URL is publicly reachable", false, String(e.message));
+  }
+} else {
+  record(
+    "demo URL reachability",
+    false,
+    "not checked — re-run with --demo-url <url> before submitting",
+    false,
+  );
+}
 
 // ---- verdict ----
 const failedRequired = results.filter((r) => r.required && !r.ok);
