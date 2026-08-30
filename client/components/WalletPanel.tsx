@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { constants, type WalletAccountV6 } from "starknet";
 import {
   connectWallet,
@@ -53,6 +54,8 @@ export default function WalletPanel({
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   // Latest-wins token: bumping it makes any in-flight connect attempt stale,
   // so a hung wallet popup can be cancelled and can't overwrite a later state.
   const attemptRef = useRef(0);
@@ -75,14 +78,19 @@ export default function WalletPanel({
     [],
   );
 
-  // Escape closes the picker.
+  // Escape closes the picker; the page behind it stops scrolling.
   useEffect(() => {
     if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open]);
 
   // Report the session upward whenever it materially changes.
@@ -226,7 +234,8 @@ export default function WalletPanel({
         </button>
       )}
 
-      {open ? (
+      {open && mounted
+        ? createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           role="dialog"
@@ -247,9 +256,12 @@ export default function WalletPanel({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-xs text-white/40 transition hover:text-white/80"
+                aria-label="Close"
+                className="-mr-1 -mt-1 rounded-full p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
               >
-                Close
+                <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
               </button>
             </div>
 
@@ -384,8 +396,10 @@ export default function WalletPanel({
               </div>
             )}
           </div>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+          )
+        : null}
     </>
   );
 }
