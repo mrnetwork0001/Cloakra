@@ -22,3 +22,72 @@ h1 {
 ::selection {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Motion layer. Defined only inside the no-preference query, so a visitor
+   with Reduce Motion enabled gets the identical static diagrams - the
+   classes simply resolve to nothing. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes cloakra-dash {
+    to {
+      stroke-dashoffset: -140;
+    }
+  }
+  @keyframes cloakra-travel {
+    0% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(var(--travel, 60px));
+    }
+  }
+  @keyframes cloakra-breathe {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes cloakra-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(3%, -3%, 0) scale(1.08);
+    }
+  }
+  @keyframes cloakra-sweep {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(220%);
+    }
+  }
+
+  .anim-dash {
+    animation: cloakra-dash 3.2s linear infinite;
+  }
+  .anim-travel {
+    animation: cloakra-travel 2.8s ease-in-out infinite;
+  }
+  .anim-breathe {
+    animation: cloakra-breathe 3.4s ease-in-out infinite;
+  }
+  .anim-drift {
+    animation: cloakra-drift 22s ease-in-out infinite;
+  }
+  .anim-sweep {
+    animation: cloakra-sweep 7s ease-in-out infinite;
+  }
+}
