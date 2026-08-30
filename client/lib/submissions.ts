@@ -1,6 +1,6 @@
 /**
  * Module-level record of STRK20 submissions. Exists because panels unmount
- * mid-submit (tab switches, account switches — deliberate, they clear forms),
+ * mid-submit (tab switches, account switches - deliberate, they clear forms),
  * which would otherwise discard in-flight tx state and invite duplicate
  * payments of real funds.
  *

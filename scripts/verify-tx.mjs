@@ -13,7 +13,7 @@ if (!hash || !/^0x[0-9a-fA-F]+$/.test(hash)) {
   process.exit(2);
 }
 
-// The project key may be origin-allowlisted (browser-only) — that's correct
+// The project key may be origin-allowlisted (browser-only) - that's correct
 // key hygiene, but it blocks CLI use. Tx status is public data, so fall back
 // to public endpoints when the env key is absent or rejects us.
 const PUBLIC_RPCS = [
@@ -32,7 +32,7 @@ try {
     .join("=")
     .trim();
 } catch {
-  /* no env file — public RPCs only */
+  /* no env file - public RPCs only */
 }
 const candidates = [...(envUrl ? [envUrl] : []), ...PUBLIC_RPCS];
 
@@ -49,7 +49,7 @@ async function rpc(method, params) {
       });
       const body = await res.json();
       // Allowlist rejections and auth errors: try the next endpoint. A clean
-      // JSON-RPC error (e.g. hash not found) is a real answer — return it.
+      // JSON-RPC error (e.g. hash not found) is a real answer - return it.
       if (body.error && /whitelist|origin|unauthorized|api key|no longer available/i.test(String(body.error.message))) {
         lastError = body.error;
         continue;
@@ -72,7 +72,7 @@ const { finality_status, execution_status } = status.result;
 const accepted = ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(finality_status);
 const succeeded = execution_status === "SUCCEEDED";
 
-// The sprint's requirement is hashes that TOUCHED the pool — a merely
+// The sprint's requirement is hashes that TOUCHED the pool - a merely
 // successful transaction is not enough. Require at least one event emitted
 // by the pool contract.
 const receipt = await rpc("starknet_getTransactionReceipt", { transaction_hash: hash });
@@ -91,8 +91,8 @@ console.log(`pool:      ${touchedPool ? "touched the STRK20 pool" : "did NOT tou
 console.log(`voyager:   https://voyager.online/tx/${hash}`);
 
 if (accepted && succeeded && touchedPool) {
-  console.log("VERIFIED — safe to record in strk20.json");
+  console.log("VERIFIED - safe to record in strk20.json");
   process.exit(0);
 }
-console.error("NOT VERIFIED — do not record this hash");
+console.error("NOT VERIFIED - do not record this hash");
 process.exit(1);

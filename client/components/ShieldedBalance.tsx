@@ -18,7 +18,7 @@ type State =
 
 /**
  * User-triggered by design: reading shielded balances is consent-gated in the
- * wallet, so the request only ever starts from this button — never on mount.
+ * wallet, so the request only ever starts from this button - never on mount.
  */
 export default function ShieldedBalance({ account }: { account: WalletAccountV6 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -31,7 +31,7 @@ export default function ShieldedBalance({ account }: { account: WalletAccountV6 
     } catch (err) {
       const kind = walletErrorKind(err);
       if (kind === "not_registered") {
-        // Expected state for an account that never used the pool — the wallet
+        // Expected state for an account that never used the pool - the wallet
         // refuses the read before consent. Not an error.
         setState({ kind: "unregistered" });
         return;
@@ -41,7 +41,7 @@ export default function ShieldedBalance({ account }: { account: WalletAccountV6 
         message:
           kind === "refused"
             ? "Balance request declined in the wallet."
-            : "Could not read shielded balance — check the console and try again.",
+            : "Could not read shielded balance - check the console and try again.",
       });
     }
   }, [account]);
@@ -52,7 +52,7 @@ export default function ShieldedBalance({ account }: { account: WalletAccountV6 
         <p className="text-xs tracking-wide text-white/40 uppercase">Shielded balance</p>
         <p className="mt-1 text-sm text-white/60">
           This account isn&apos;t in the pool yet. Activate the private balance
-          inside the Ready extension (a one-time registration), then shield —
+          inside the Ready extension (a one-time registration), then shield -
           nothing to display until then.
         </p>
       </div>
@@ -73,7 +73,7 @@ export default function ShieldedBalance({ account }: { account: WalletAccountV6 
           ))
         )}
         <p className="mt-1 text-xs text-white/30">
-          Visible only to you — shared by your wallet with your consent.
+          Visible only to you - shared by your wallet with your consent.
         </p>
       </div>
     );
@@ -90,7 +90,7 @@ export default function ShieldedBalance({ account }: { account: WalletAccountV6 
         {state.kind === "loading" ? "Waiting for wallet…" : "Show shielded balance"}
       </button>
       <p className="text-xs text-white/30">
-        Your wallet will ask before sharing — the app never reads this on its own.
+        Your wallet will ask before sharing - the app never reads this on its own.
       </p>
       {state.kind === "error" ? (
         <p className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-200">

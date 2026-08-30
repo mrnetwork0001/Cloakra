@@ -7,7 +7,7 @@ import { formatTokenAmount } from "@/lib/strk20";
 /**
  * The flat pool fee, read from the pool contract in the viewer's browser.
  * Not decoration: the fee changed mid-sprint (4 → 6 STRK), which is exactly
- * why nothing in Cloakra hardcodes it — and why this line proves the page is
+ * why nothing in Cloakra hardcodes it - and why this line proves the page is
  * talking to mainnet rather than reciting copy.
  */
 export default function LiveFee() {
@@ -34,7 +34,7 @@ export default function LiveFee() {
       <span className="text-white/70">
         {fee !== null ? `${formatTokenAmount(fee)} STRK` : failed ? "unreadable (RPC)" : "…"}
       </span>{" "}
-      — read live from the pool contract in your browser, never hardcoded.
+      - read live from the pool contract in your browser, never hardcoded.
     </p>
   );
 }

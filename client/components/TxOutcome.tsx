@@ -5,7 +5,7 @@ import { shorten, voyagerTx } from "@/lib/config";
 
 /**
  * Shared result screen for any STRK20 submission. One honest screen per
- * outcome — "confirmed" is only ever shown for execution SUCCEEDED. The
+ * outcome - "confirmed" is only ever shown for execution SUCCEEDED. The
  * `operation` name keeps identity when several panels stack on one page, and
  * `revertedBody` lets each flow name only the causes it can actually have.
  */
@@ -14,7 +14,7 @@ export default function TxOutcome({
   operation,
   confirmedTitle,
   confirmedBody,
-  revertedBody = "The transaction was included but reverted — no value moved. A pool-side check rejected it at execution.",
+  revertedBody = "The transaction was included but reverted - no value moved. A pool-side check rejected it at execution.",
   onBack,
   children,
 }: {
@@ -64,7 +64,7 @@ export default function TxOutcome({
     return (
       <section className="rounded-xl border border-red-400/25 bg-red-400/[0.05] p-6">
         <h2 className="text-sm font-medium tracking-wide text-red-200/70 uppercase">
-          {operation} — reverted on-chain
+          {operation} - reverted on-chain
         </h2>
         <p className="mt-3 text-sm text-white/70">{revertedBody}</p>
         <p className="mt-2">{voyager}</p>
@@ -76,7 +76,7 @@ export default function TxOutcome({
     return (
       <section className="rounded-xl border border-red-400/25 bg-red-400/[0.05] p-6">
         <h2 className="text-sm font-medium tracking-wide text-red-200/70 uppercase">
-          {operation} — transaction failed
+          {operation} - transaction failed
         </h2>
         <p className="mt-3 text-sm text-white/70">
           The network reported this transaction won&apos;t land:{" "}
@@ -90,10 +90,10 @@ export default function TxOutcome({
   return (
     <section className="rounded-xl border border-white/15 bg-white/[0.03] p-6">
       <h2 className="text-sm font-medium tracking-wide text-white/50 uppercase">
-        {operation} — submitted, status unknown
+        {operation} - submitted, status unknown
       </h2>
       <p className="mt-3 text-sm text-white/70">
-        The wait timed out before a receipt arrived. That is not a failure —
+        The wait timed out before a receipt arrived. That is not a failure -
         check the explorer before assuming either way, and do not resubmit
         until the explorer answers.
       </p>

@@ -1,6 +1,6 @@
 /**
- * Shown while no wallet is connected. Most first-time visitors — reviewers
- * included — will not have a privacy-enabled wallet installed, and would
+ * Shown while no wallet is connected. Most first-time visitors - reviewers
+ * included - will not have a privacy-enabled wallet installed, and would
  * otherwise see a connect prompt and nothing else. This explains what each
  * tab does and, honestly, which parts need a wallet and which do not. It
  * shows no balances and fabricates no data.
@@ -8,7 +8,7 @@
 const TABS = [
   {
     name: "StealthSplit",
-    text: "Pay a whole team from one shielded balance in a single atomic transaction — paste a CSV payroll or add rows by hand. Every recipient's amount stays inside the pool.",
+    text: "Pay a whole team from one shielded balance in a single atomic transaction - paste a CSV payroll or add rows by hand. Every recipient's amount stays inside the pool.",
   },
   {
     name: "GhostBounty",
@@ -20,7 +20,7 @@ const TABS = [
   },
   {
     name: "Treasury",
-    text: "Shield STRK into the pool, unshield back out, and read your public footprint — every pool leg the chain can see about this account.",
+    text: "Shield STRK into the pool, unshield back out, and read your public footprint - every pool leg the chain can see about this account.",
   },
 ] as const;
 
@@ -33,7 +33,7 @@ export default function Orientation() {
       <p className="mt-2 max-w-2xl text-sm text-white/50">
         Connecting requires a privacy-enabled wallet on Starknet mainnet
         (Ready). Without one you can still read every claim this project
-        makes — the mainnet proof on the landing page verifies itself against
+        makes - the mainnet proof on the landing page verifies itself against
         Starknet with no wallet involved.
       </p>
 

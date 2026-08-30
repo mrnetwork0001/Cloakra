@@ -1,11 +1,11 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Cloakra — Shielded Capital Allocation on Starknet";
+export const alt = "Cloakra - Shielded Capital Allocation on Starknet";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /**
- * Social preview card. Rendered at build time — no external requests, no
+ * Social preview card. Rendered at build time - no external requests, no
  * fonts to fetch. Satori supports a flexbox subset only: every container
  * with multiple children declares display:flex explicitly.
  */
@@ -24,7 +24,7 @@ export default async function OpengraphImage() {
           position: "relative",
         }}
       >
-        {/* Aurora wash — the one place colour lives, as on the site */}
+        {/* Aurora wash - the one place colour lives, as on the site */}
         <div
           style={{
             position: "absolute",
@@ -77,7 +77,7 @@ export default async function OpengraphImage() {
             }}
           >
             Shielded grants, bounties, and contributor payouts through the STRK20
-            privacy pool — live on Starknet mainnet.
+            privacy pool - live on Starknet mainnet.
           </div>
         </div>
 

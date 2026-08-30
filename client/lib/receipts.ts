@@ -1,21 +1,21 @@
 /**
- * Signed payout receipts — the auditor story without the dapp ever touching a
+ * Signed payout receipts - the auditor story without the dapp ever touching a
  * viewing key.
  *
  * After a run settles, the org's wallet signs ONE SNIP-12 typed-data message
  * (off-chain, free, one popup) committing to: the operation, the settlement tx
  * hash, the pool, and a Merkle root over salted (recipient, amount) leaves.
- * Each recipient then gets a receipt file carrying only THEIR leaf + proof —
+ * Each recipient then gets a receipt file carrying only THEIR leaf + proof -
  * a receipt reveals nothing about other recipients, and the salts stop anyone
  * brute-forcing the root against guessed address/amount pairs.
  *
  * A receipt is an ATTESTATION: it proves what the org signed, not what the
- * shielded transaction contains — the pool keeps tx contents private by
+ * shielded transaction contains - the pool keeps tx contents private by
  * design, so no receipt scheme can chain-verify the transfer itself.
  * Verification is public: rebuild the leaf, walk the proof to the root,
  * check the signature against the org account on-chain (SNIP-6
  * is_valid_signature via verifyMessageInStarknet), and confirm the referenced
- * tx settled AND touched the pool. No keys, no wallet, no trust in Cloakra —
+ * tx settled AND touched the pool. No keys, no wallet, no trust in Cloakra -
  * but the receipt is exactly as trustworthy as its signer.
  */
 
@@ -169,11 +169,11 @@ export async function signRun(
   expectedPayer?: string,
 ): Promise<PayoutReceipt[]> {
   const org = toHex(account.address);
-  // The wallet can switch accounts under us — an attestation signed by the
+  // The wallet can switch accounts under us - an attestation signed by the
   // wrong org account would verify green for the wrong signer.
   if (expectedPayer !== undefined && BigInt(org) !== BigInt(expectedPayer)) {
     throw new Error(
-      "The wallet's active account is not the account that paid this run — switch back before signing receipts.",
+      "The wallet's active account is not the account that paid this run - switch back before signing receipts.",
     );
   }
   const prepared = prepareRun(operation, txHash, org, recipients);
@@ -194,7 +194,7 @@ export async function signRun(
     salt,
     proof: prepared.tree.getProof(leaf),
     signature,
-    note: "Share this file only with its recipient — it reveals their amount to whoever holds it. Verify at /verify.",
+    note: "Share this file only with its recipient - it reveals their amount to whoever holds it. Verify at /verify.",
   }));
 }
 
@@ -212,7 +212,7 @@ export interface ReceiptVerification {
   ok: boolean;
 }
 
-/** Full public verification — pure math plus two public RPC reads. */
+/** Full public verification - pure math plus two public RPC reads. */
 export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVerification> {
   const result: ReceiptVerification = {
     structure: false,
@@ -228,7 +228,7 @@ export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVeri
     BigInt(receipt.salt);
     BigInt(receipt.merkleRoot);
     // Stored chain/pool must be the ones the verifier rebuilds the signed
-    // message with — otherwise they are decorative fields inviting false
+    // message with - otherwise they are decorative fields inviting false
     // assurance.
     if (BigInt(receipt.chainId) !== BigInt(DOMAIN.chainId)) return result;
     if (BigInt(receipt.pool) !== BigInt(STRK20_POOL_ADDRESS)) return result;
@@ -268,7 +268,7 @@ export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVeri
     if (receiptTx.isSuccess()) {
       // A random successful tx must not lend credibility to an attestation:
       // require the settlement to have emitted STRK20 pool events. (What the
-      // shielded tx DID remains private by design — this only proves it was
+      // shielded tx DID remains private by design - this only proves it was
       // a pool transaction.)
       const events =
         (receiptTx as unknown as { events?: { from_address?: string }[] })
@@ -299,7 +299,7 @@ export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVeri
   return result;
 }
 
-/** SNIP-12 message hash — exposed for tests and debugging. */
+/** SNIP-12 message hash - exposed for tests and debugging. */
 export function runMessageHash(typedData: TypedData, org: string): string {
   return snip12.getMessageHash(typedData, org);
 }

@@ -25,7 +25,7 @@ describe("parseRecipientsCsv", () => {
     expect(recipients).toHaveLength(1);
   });
 
-  it("NEVER silently skips a header — errors with a hint instead", () => {
+  it("NEVER silently skips a header - errors with a hint instead", () => {
     const { recipients, errors } = parseRecipientsCsv(
       `address, amount\n${A}, 5`,
       10,

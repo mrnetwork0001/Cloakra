@@ -37,7 +37,7 @@ describe("closeTo", () => {
   });
 });
 
-describe("findCorrelations — timing", () => {
+describe("findCorrelations - timing", () => {
   it("warns on a recent confirmed deposit", () => {
     const ws = findCorrelations({
       ...base,
@@ -66,7 +66,7 @@ describe("findCorrelations — timing", () => {
   });
 });
 
-describe("findCorrelations — amount echoes", () => {
+describe("findCorrelations - amount echoes", () => {
   it("dust-changed amounts still warn (approximate matching)", () => {
     const ws = findCorrelations({
       ...base,
@@ -123,7 +123,7 @@ describe("findCorrelations — amount echoes", () => {
   });
 });
 
-describe("findCorrelations — self-unshield softening", () => {
+describe("findCorrelations - self-unshield softening", () => {
   it("downgrades severity and explains the round-trip", () => {
     const ws = findCorrelations({
       ...base,
@@ -137,7 +137,7 @@ describe("findCorrelations — self-unshield softening", () => {
   });
 });
 
-describe("findCorrelations — non-signals", () => {
+describe("findCorrelations - non-signals", () => {
   it("ignores withdrawals for both timing and echoes", () => {
     const ws = findCorrelations({
       ...base,

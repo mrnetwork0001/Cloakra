@@ -8,26 +8,26 @@ const MODULES = [
     name: "StealthSplit",
     tag: "Team payouts",
     blurb:
-      "One shielded balance split atomically into per-contributor balances. All transfers land or none do — and inside the pool, co-workers can't read each other's allocation.",
+      "One shielded balance split atomically into per-contributor balances. All transfers land or none do - and inside the pool, co-workers can't read each other's allocation.",
   },
   {
     name: "GhostBounty",
     tag: "Security research",
     blurb:
-      "Bounty payouts land in the researcher's shielded balance — the payout transaction names no recipient, no amount, and nothing linking them to your program.",
+      "Bounty payouts land in the researcher's shielded balance - the payout transaction names no recipient, no amount, and nothing linking them to your program.",
   },
   {
     name: "StealthGrant",
     tag: "Grant rounds",
     blurb:
-      "A whole grant round disbursed in one atomic transaction. Each grantee sees only their own award — the recipient list and per-grant amounts never appear on-chain. Only the org's total deposit is public.",
+      "A whole grant round disbursed in one atomic transaction. Each grantee sees only their own award - the recipient list and per-grant amounts never appear on-chain. Only the org's total deposit is public.",
   },
 ] as const;
 
 const PROBLEMS = [
   {
     title: "A bounty payout doxxes the researcher",
-    text: "Pay a white-hat publicly and you've permanently linked their wallet — and often their identity — to the vulnerability they found.",
+    text: "Pay a white-hat publicly and you've permanently linked their wallet - and often their identity - to the vulnerability they found.",
   },
   {
     title: "A team split publishes the salary table",
@@ -35,19 +35,19 @@ const PROBLEMS = [
   },
   {
     title: "A grant round exposes every recipient",
-    text: "Funding projects on-chain broadcasts your entire allocation strategy — who, how much, and when — to competitors and attackers alike.",
+    text: "Funding projects on-chain broadcasts your entire allocation strategy - who, how much, and when - to competitors and attackers alike.",
   },
 ] as const;
 
 const STEPS = [
   {
     step: "Shield",
-    text: "The org deposits STRK into the STRK20 pool. This leg is public — address and amount. From here on, activity inside the pool carries no readable link back to it.",
+    text: "The org deposits STRK into the STRK20 pool. This leg is public - address and amount. From here on, activity inside the pool carries no readable link back to it.",
     variant: 0 as const,
   },
   {
     step: "Allocate privately",
-    text: "Splits, bounties, and grants settle inside the pool as encrypted notes. Recipients, amounts, and the link to your org are unreadable — each recipient sees only their own balance.",
+    text: "Splits, bounties, and grants settle inside the pool as encrypted notes. Recipients, amounts, and the link to your org are unreadable - each recipient sees only their own balance.",
     variant: 1 as const,
   },
   {
@@ -64,7 +64,7 @@ const FAQ = [
   },
   {
     q: "What does a private operation cost?",
-    a: "The pool charges a flat fee per private operation, and Cloakra reads it live from the contract — it was 6 STRK at last check, and it changed mid-sprint, which is exactly why nothing here hardcodes it. On shields the fee is deducted from the deposited amount.",
+    a: "The pool charges a flat fee per private operation, and Cloakra reads it live from the contract - it was 6 STRK at last check, and it changed mid-sprint, which is exactly why nothing here hardcodes it. On shields the fee is deducted from the deposited amount.",
   },
   {
     q: "What stays public?",
@@ -72,15 +72,15 @@ const FAQ = [
   },
   {
     q: "What do recipients need?",
-    a: "A privacy-enabled wallet (Ready) with private tokens enabled — a one-time in-wallet registration whose flow deposits 6 STRK that the pool fee consumes. Dapp-initiated operations cannot trigger registration; the UI says so rather than failing cryptically.",
+    a: "A privacy-enabled wallet (Ready) with private tokens enabled - a one-time in-wallet registration whose flow deposits 6 STRK that the pool fee consumes. Dapp-initiated operations cannot trigger registration; the UI says so rather than failing cryptically.",
   },
   {
     q: "Can Cloakra read my shielded balance?",
-    a: "Only through your wallet, only when you press the button, and only after the wallet's own consent prompt. Capability detection is a version query — the app never reads wallet data to feature-detect.",
+    a: "Only through your wallet, only when you press the button, and only after the wallet's own consent prompt. Capability detection is a version query - the app never reads wallet data to feature-detect.",
   },
   {
     q: "Why should I believe any of this?",
-    a: "Don't — verify. Three mainnet transaction hashes are recorded in strk20.json and re-verified against Starknet in your browser on this very page. A fabricated hash would render a red NOT FOUND. The repo's verify script additionally requires the transactions to have emitted STRK20 pool events.",
+    a: "Don't - verify. Three mainnet transaction hashes are recorded in strk20.json and re-verified against Starknet in your browser on this very page. A fabricated hash would render a red NOT FOUND. The repo's verify script additionally requires the transactions to have emitted STRK20 pool events.",
   },
 ] as const;
 
@@ -155,7 +155,7 @@ export default function Home() {
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/60">
               Cloakra is a shielded capital-allocation desk for organizations on
               Starknet. Grants, bug bounties, and contributor payouts settle
-              through the STRK20 privacy pool — who receives and how much stays
+              through the STRK20 privacy pool - who receives and how much stays
               private, while the public legs stay honestly, verifiably public.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -195,7 +195,7 @@ export default function Home() {
           <ul className="flex flex-wrap items-center gap-3 text-sm text-white/50">
             {[
               "3 verified mainnet txs",
-              "0 custom contracts — pure pool rails",
+              "0 custom contracts - pure pool rails",
               "100% wallet-signed; no server keys",
               "30 tests on the money path",
             ].map((chip) => (
@@ -265,7 +265,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Problems — the reference's testimonial slot, honestly used */}
+        {/* Problems - the reference's testimonial slot, honestly used */}
         <section className="border-t border-white/10 py-24">
           <h2 className="text-center text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Every payout is a disclosure
@@ -287,7 +287,7 @@ export default function Home() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/50">
             Cloakra never overclaims. The privacy is the broken link between
-            deposits and withdrawals — not invisibility of the public legs.
+            deposits and withdrawals - not invisibility of the public legs.
           </p>
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full text-left text-sm">

@@ -29,7 +29,7 @@ interface Row {
 }
 
 /**
- * StealthSplit — the hero. One shielded balance disbursed to N recipients in
+ * StealthSplit - the hero. One shielded balance disbursed to N recipients in
  * a single atomic transaction: all transfers land or none do, and no
  * recipient can see what any other recipient received.
  */
@@ -38,12 +38,12 @@ export default function SplitPanel({
   address,
   disabled = false,
   title = "StealthSplit",
-  description = "Disburse one shielded balance to the whole team in a single atomic transaction. All transfers land or none do — and no recipient can read anyone else's amount.",
+  description = "Disburse one shielded balance to the whole team in a single atomic transaction. All transfers land or none do - and no recipient can read anyone else's amount.",
 }: {
   account: WalletAccountV6;
   address: string;
   disabled?: boolean;
-  /** Module framing — GhostGrant/StealthGrant reuse these same rails. */
+  /** Module framing - GhostGrant/StealthGrant reuse these same rails. */
   title?: string;
   description?: string;
 }) {
@@ -119,7 +119,7 @@ export default function SplitPanel({
     );
     setCsvOpen(false);
     setCsvNote(
-      `${recipients.length} recipient${recipients.length === 1 ? "" : "s"} filled from CSV — replacing any typed rows. Review before submitting.`,
+      `${recipients.length} recipient${recipients.length === 1 ? "" : "s"} filled from CSV - replacing any typed rows. Review before submitting.`,
     );
     setPhase({ kind: "form" });
   }, [csvText, gate]);
@@ -161,7 +161,7 @@ export default function SplitPanel({
       if (seen.has(to)) {
         setPhase({
           kind: "error",
-          message: `Recipient ${i + 1} repeats an earlier address — merge the rows.`,
+          message: `Recipient ${i + 1} repeats an earlier address - merge the rows.`,
         });
         return;
       }
@@ -169,10 +169,10 @@ export default function SplitPanel({
       parsed.push({ address: to, raw });
     }
 
-    // Check each row AND the total — either can echo a public deposit.
+    // Check each row AND the total - either can echo a public deposit.
     const gateAmounts = [...parsed.map((p) => p.raw), parsed.reduce((a, p) => a + p.raw, 0n)];
     if (!force && !(await gate.passes(gateAmounts, "transfer"))) return;
-    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    // The gate awaited RPC - re-check the signer wasn't switched meanwhile.
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -183,7 +183,7 @@ export default function SplitPanel({
       const outcome = await executeStrk20(account, buildSplit(parsed), title);
       setSettledCount(parsed.length);
       if (outcome.kind === "confirmed" || outcome.kind === "submitted") {
-        // Module store: the only durable copy of who this run paid — the
+        // Module store: the only durable copy of who this run paid - the
         // shielded tx cannot reproduce it, and panels unmount freely.
         recordRun({
           operation: title,
@@ -202,9 +202,9 @@ export default function SplitPanel({
           kind === "refused"
             ? "Split declined in the wallet."
             : kind === "not_registered"
-              ? "This account or at least one recipient isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready — run it there (dapp-initiated operations can't trigger it), and every recipient must have done the same."
+              ? "This account or at least one recipient isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready - run it there (dapp-initiated operations can't trigger it), and every recipient must have done the same."
               : kind === "insufficient_private"
-                ? "Not enough shielded balance for the full split — remember fees, and freshly shielded notes mature ~10 blocks."
+                ? "Not enough shielded balance for the full split - remember fees, and freshly shielded notes mature ~10 blocks."
                 : `Split failed: ${walletErrorMessage(err)}`,
       });
     }
@@ -216,8 +216,8 @@ export default function SplitPanel({
         outcome={phase.outcome}
         operation={title}
         confirmedTitle="Split settled"
-        confirmedBody={`All ${settledCount} transfers landed in one atomic transaction. Each recipient holds an independent shielded balance — none of them can see the others' allocations.`}
-        revertedBody="The split was included but reverted — the batch is atomic, so no recipient received anything. Possible causes: immature notes (~10 blocks), insufficient shielded balance for the full batch, or a fee change."
+        confirmedBody={`All ${settledCount} transfers landed in one atomic transaction. Each recipient holds an independent shielded balance - none of them can see the others' allocations.`}
+        revertedBody="The split was included but reverted - the batch is atomic, so no recipient received anything. Possible causes: immature notes (~10 blocks), insufficient shielded balance for the full batch, or a fee change."
         onBack={onBack}
       />
     );
@@ -307,7 +307,7 @@ export default function SplitPanel({
           </button>
           <p className="text-xs text-white/35">
             One recipient per line: <code>address, amount</code>. Every row
-            passes the same validation as the form — nothing is sent yet.
+            passes the same validation as the form - nothing is sent yet.
           </p>
         </div>
       ) : null}
@@ -331,9 +331,9 @@ export default function SplitPanel({
 
       <p className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/50">
         Whether a batched split pays the fee once or per transfer is settled by
-        the pool — Ready shows the exact total before you sign.{" "}
+        the pool - Ready shows the exact total before you sign.{" "}
         {COPY.recipientPrereq} Advise recipients not to unshield exact row
-        amounts right away — matching withdrawals let observers partition the
+        amounts right away - matching withdrawals let observers partition the
         split from outside.
       </p>
 

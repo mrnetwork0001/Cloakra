@@ -27,11 +27,11 @@ type Status =
       kind: "connected";
       account: WalletAccountV6;
       wallet: DiscoveredWallet;
-      /** Live address — updated by the wallet's change events. */
+      /** Live address - updated by the wallet's change events. */
       address: string;
-      /** The WALLET's chain (walletV6.requestChainId) — where its txs go. */
+      /** The WALLET's chain (walletV6.requestChainId) - where its txs go. */
       chainId: string;
-      /** Wallet-API ≥ 0.10 — detected via version query, never a data probe. */
+      /** Wallet-API ≥ 0.10 - detected via version query, never a data probe. */
       strk20: boolean;
     }
   | { kind: "error"; message: string };
@@ -100,11 +100,11 @@ export default function WalletPanel({
       // Connect FIRST: this is what pops the wallet's unlock/approve UI. A
       // locked extension never answers background version queries, so any
       // read before connect hangs forever with no popup (seen live with
-      // Ready). Capability is still a version query — never a data probe —
+      // Ready). Capability is still a version query - never a data probe -
       // it just runs after the wallet is awake, with a timeout.
       const account = await connectWallet(wallet);
       const seq = ++chainSeqRef.current;
-      // Guard on the WALLET's chain, not account.provider.getChainId() —
+      // Guard on the WALLET's chain, not account.provider.getChainId() -
       // the provider reports our own RPC, which is always mainnet here.
       const [strk20, chainId] = await Promise.all([
         withTimeout(detectStrk20Support(wallet), 8_000, false),
@@ -178,11 +178,11 @@ export default function WalletPanel({
         setSwitchError("The wallet declined the network switch.");
       }
     } catch (err) {
-      // Declining a switch is routine — never tear the session down over it.
+      // Declining a switch is routine - never tear the session down over it.
       setSwitchError(
         isUserRefusal(err)
           ? "Network switch declined in the wallet."
-          : "Could not switch network — try it from inside the wallet.",
+          : "Could not switch network - try it from inside the wallet.",
       );
     } finally {
       setSwitching(false);
@@ -260,7 +260,7 @@ export default function WalletPanel({
             ) : (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-white/60">
                 <p>
-                  This wallet can&apos;t do private transfers — STRK20 needs a
+                  This wallet can&apos;t do private transfers - STRK20 needs a
                   privacy-enabled wallet. Install{" "}
                   <a
                     className="text-white/90 underline underline-offset-4 hover:text-white"
@@ -289,7 +289,7 @@ export default function WalletPanel({
         {wallets.length === 0 ? (
           <p className="text-sm text-white/50">
             No Starknet wallet detected. Private transfers need a
-            privacy-enabled wallet — install{" "}
+            privacy-enabled wallet - install{" "}
             <a
               className="text-white/80 underline underline-offset-4 hover:text-white"
               href="https://www.ready.co"

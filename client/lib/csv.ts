@@ -1,13 +1,13 @@
 /**
- * CSV payroll parsing for split flows. Pure and testable — every row passes
+ * CSV payroll parsing for split flows. Pure and testable - every row passes
  * the same validators the form uses (parseAddress bounds + normalization,
  * parseTokenAmount), so pasting can't smuggle in anything typing couldn't.
  *
- * Accepted line shape: `address, amount` — separator is comma/semicolon/tab
- * (empty fields are NOT collapsed — a 3-column export errors instead of
+ * Accepted line shape: `address, amount` - separator is comma/semicolon/tab
+ * (empty fields are NOT collapsed - a 3-column export errors instead of
  * paying the wrong column), or whitespace when no delimiter is present.
  * Blank lines and #-comments are skipped. There is NO header guessing: a
- * header row errors with a hint to delete it or prefix it with # — silent
+ * header row errors with a hint to delete it or prefix it with # - silent
  * skipping was a silent-underpayment bug.
  */
 
@@ -33,7 +33,7 @@ export function parseRecipientsCsv(
   const recipients: CsvRecipient[] = [];
   const errors: string[] = [];
 
-  // All line-ending conventions, including CR-only and unicode separators —
+  // All line-ending conventions, including CR-only and unicode separators -
   // otherwise every row lands on "line 1" and the errors mislead.
   const rawLines = text.split(/\r\n|\r|\n|\u2028|\u2029/);
   for (let i = 0; i < rawLines.length; i++) {
@@ -49,7 +49,7 @@ export function parseRecipientsCsv(
     const hint = lineNo === 1 ? HEADER_HINT : "";
     if (parts.length !== 2 || parts.some((p) => !p)) {
       errors.push(
-        `line ${lineNo}: expected "address, amount" — got ${parts.length} value(s)${hint}`,
+        `line ${lineNo}: expected "address, amount" - got ${parts.length} value(s)${hint}`,
       );
       continue;
     }
@@ -68,7 +68,7 @@ export function parseRecipientsCsv(
 
   if (recipients.length > maxRows) {
     errors.push(
-      `${recipients.length} recipients — the pool batch is capped at ${maxRows} per split. Split the round into batches.`,
+      `${recipients.length} recipients - the pool batch is capped at ${maxRows} per split. Split the round into batches.`,
     );
     return { recipients: [], errors };
   }

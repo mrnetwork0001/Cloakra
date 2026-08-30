@@ -30,7 +30,7 @@ export default function TransferPanel({
   account: WalletAccountV6;
   address: string;
   disabled?: boolean;
-  /** Module framing — GhostBounty reuses these same rails. */
+  /** Module framing - GhostBounty reuses these same rails. */
   title?: string;
   description?: string;
 }) {
@@ -60,7 +60,7 @@ export default function TransferPanel({
     try {
       to = parseAddress(recipient);
       if (sameFelt(to, address)) {
-        throw new Error("That's your own address — pick the recipient's.");
+        throw new Error("That's your own address - pick the recipient's.");
       }
       raw = parseTokenAmount(amount);
     } catch (err) {
@@ -69,7 +69,7 @@ export default function TransferPanel({
     }
 
     if (!force && !(await gate.passes([raw], "transfer"))) return;
-    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    // The gate awaited RPC - re-check the signer wasn't switched meanwhile.
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -96,9 +96,9 @@ export default function TransferPanel({
           kind === "refused"
             ? "Transfer declined in the wallet."
             : kind === "not_registered"
-              ? "One side of this transfer isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready — run it there (dapp-initiated operations can't trigger it); the recipient must have done the same in their own wallet."
+              ? "One side of this transfer isn't registered in the pool. Registration is the 'Enable private tokens' step inside Ready - run it there (dapp-initiated operations can't trigger it); the recipient must have done the same in their own wallet."
               : kind === "insufficient_private"
-                ? "Not enough shielded balance — remember the pool fee, and freshly shielded notes mature ~10 blocks before they can be spent."
+                ? "Not enough shielded balance - remember the pool fee, and freshly shielded notes mature ~10 blocks before they can be spent."
                 : `Transfer failed: ${walletErrorMessage(err)}`,
       });
     }
@@ -110,8 +110,8 @@ export default function TransferPanel({
         outcome={phase.outcome}
         operation={title}
         confirmedTitle="Sent privately"
-        confirmedBody="Transfer confirmed — execution succeeded. Inside the pool, sender, recipient, and amount stay private."
-        revertedBody="The transfer was included but reverted — no value moved. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
+        confirmedBody="Transfer confirmed - execution succeeded. Inside the pool, sender, recipient, and amount stay private."
+        revertedBody="The transfer was included but reverted - no value moved. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
         onBack={onBack}
       />
     );

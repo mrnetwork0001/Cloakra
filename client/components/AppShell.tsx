@@ -39,7 +39,7 @@ export default function AppShell() {
     getServerSnapshot,
   );
   // While anything is signing or awaiting its receipt, freeze navigation and
-  // submits — a remounted blank form mid-flight is a duplicate-payment trap.
+  // submits - a remounted blank form mid-flight is a duplicate-payment trap.
   const busy = submissions.some(
     (s) => s.kind === "signing" || s.kind === "pending",
   );
@@ -85,7 +85,7 @@ export default function AppShell() {
 
       {session?.strk20 && session.wrongChain ? (
         <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-          Wallet is on the wrong network — switch to mainnet to use Cloakra.
+          Wallet is on the wrong network - switch to mainnet to use Cloakra.
         </p>
       ) : null}
 
@@ -108,7 +108,7 @@ export default function AppShell() {
                 disabled={busy && tab !== t}
                 title={
                   busy && tab !== t
-                    ? "A submission is in flight — navigation unlocks when it settles."
+                    ? "A submission is in flight - navigation unlocks when it settles."
                     : undefined
                 }
                 className={`shrink-0 rounded-lg px-4 py-2 text-sm transition disabled:opacity-40 ${
@@ -142,7 +142,7 @@ export default function AppShell() {
                 </p>
                 <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm text-white/60">
                   <li>
-                    Install a privacy-enabled Starknet wallet —{" "}
+                    Install a privacy-enabled Starknet wallet -{" "}
                     <a
                       className="text-white/80 underline underline-offset-4 hover:text-white"
                       href="https://www.ready.co"
@@ -153,12 +153,12 @@ export default function AppShell() {
                     </a>
                   </li>
                   <li>
-                    Run &ldquo;Enable private tokens&rdquo; in the wallet — a
+                    Run &ldquo;Enable private tokens&rdquo; in the wallet - a
                     one-time registration. Note: Ready&apos;s flow deposits 6
                     STRK which the pool fee consumes, so the account needs a
                     little STRK first.
                   </li>
-                  <li>Share their address with you — nothing else.</li>
+                  <li>Share their address with you - nothing else.</li>
                 </ol>
                 <p className="mt-3 text-xs text-white/40">
                   The payout below then reaches their shielded balance without
@@ -170,7 +170,7 @@ export default function AppShell() {
                 address={session.address}
                 disabled={session.wrongChain || busy}
                 title="GhostBounty payout"
-                description="Pays a security researcher into their shielded balance. Explorers see that a pool transaction happened — but not who was paid, not the amount, and nothing naming your program. Your deposits into the pool stay public, so shield well before paying, not right before."
+                description="Pays a security researcher into their shielded balance. Explorers see that a pool transaction happened - but not who was paid, not the amount, and nothing naming your program. Your deposits into the pool stay public, so shield well before paying, not right before."
               />
             </>
           ) : null}
@@ -181,7 +181,7 @@ export default function AppShell() {
               address={session.address}
               disabled={session.wrongChain || busy}
               title="StealthGrant round"
-              description="Disburse a grant round to all recipients in one atomic transaction. Each grantee sees their own award land shielded, and no grantee can see anyone else's amount. Outsiders see your public deposits into the pool and that pool activity occurred — never who received, or how much."
+              description="Disburse a grant round to all recipients in one atomic transaction. Each grantee sees their own award land shielded, and no grantee can see anyone else's amount. Outsiders see your public deposits into the pool and that pool activity occurred - never who received, or how much."
             />
           ) : null}
 

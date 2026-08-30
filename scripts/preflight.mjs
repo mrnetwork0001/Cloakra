@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Submission preflight — run before submitting to the sprint.
+// Submission preflight - run before submitting to the sprint.
 // Usage: node scripts/preflight.mjs
 // Exits 0 only when every REQUIRED check passes. Warns on should-fix items.
 
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // Pass the live demo URL to check public reachability:
 //   node scripts/preflight.mjs --demo-url https://<host>
-// It is deliberately NOT stored in this repo — supply it at run time.
+// It is deliberately NOT stored in this repo - supply it at run time.
 const demoUrlArg = (() => {
   const i = process.argv.indexOf("--demo-url");
   return i !== -1 ? process.argv[i + 1] : undefined;
@@ -25,7 +25,7 @@ const results = [];
 const record = (name, ok, detail = "", required = true) => {
   results.push({ name, ok, detail, required });
   const mark = ok ? "✓" : required ? "✗" : "⚠";
-  console.log(`${mark} ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(`${mark} ${name}${detail ? ` - ${detail}` : ""}`);
 };
 
 async function rpc(method, params) {
@@ -74,7 +74,7 @@ record(
 record(
   "demo_video filled",
   typeof manifest.demo_video === "string" && manifest.demo_video.length > 0,
-  manifest.demo_video ? manifest.demo_video : "EMPTY — required before submitting",
+  manifest.demo_video ? manifest.demo_video : "EMPTY - required before submitting",
   false, // warn until video day, but the final run must show ✓
 );
 
@@ -111,7 +111,7 @@ record(
     !["CLOAKRA_BUILD_DAYS.md", "DEMO_SCRIPT.md"].some((f) => {
       try {
         // tracked = exists AND not ignored; a pure existence check suffices
-        // here because both files are gitignored — this guards against the
+        // here because both files are gitignored - this guards against the
         // ignore rules being accidentally removed.
         const gitignore = readFileSync(join(root, ".gitignore"), "utf8");
         return existsSync(join(root, f)) && !gitignore.includes(f);
@@ -134,7 +134,7 @@ if (demoUrlArg) {
     record(
       "demo URL is publicly reachable (deployment protection OFF)",
       res.ok && !walled,
-      walled ? `HTTP ${res.status} — still behind deployment protection` : `HTTP ${res.status}`,
+      walled ? `HTTP ${res.status} - still behind deployment protection` : `HTTP ${res.status}`,
     );
     record(
       "demo page renders Cloakra content",
@@ -148,7 +148,7 @@ if (demoUrlArg) {
   record(
     "demo URL reachability",
     false,
-    "not checked — re-run with --demo-url <url> before submitting",
+    "not checked - re-run with --demo-url <url> before submitting",
     false,
   );
 }
@@ -160,10 +160,10 @@ console.log("");
 if (failedRequired.length === 0) {
   console.log(
     warns.length
-      ? `PREFLIGHT PASSED with ${warns.length} warning(s) — resolve before final submission.`
-      : "PREFLIGHT PASSED — ready to submit.",
+      ? `PREFLIGHT PASSED with ${warns.length} warning(s) - resolve before final submission.`
+      : "PREFLIGHT PASSED - ready to submit.",
   );
   process.exit(0);
 }
-console.error(`PREFLIGHT FAILED — ${failedRequired.length} required check(s) failed.`);
+console.error(`PREFLIGHT FAILED - ${failedRequired.length} required check(s) failed.`);
 process.exit(1);

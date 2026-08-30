@@ -61,7 +61,7 @@ export default function WithdrawPanel({
       !(await gate.passes([raw], "withdraw", { toSelf: sameFelt(to, address) }))
     )
       return;
-    // The gate awaited RPC — re-check the signer wasn't switched meanwhile.
+    // The gate awaited RPC - re-check the signer wasn't switched meanwhile.
     if (!sameFelt(account.address, address)) {
       setPhase({ kind: "error", message: COPY.accountChanged });
       return;
@@ -79,9 +79,9 @@ export default function WithdrawPanel({
           kind === "refused"
             ? "Withdrawal declined in the wallet."
             : kind === "insufficient_private"
-              ? "Not enough shielded balance — remember the pool fee, and freshly shielded notes mature ~10 blocks."
+              ? "Not enough shielded balance - remember the pool fee, and freshly shielded notes mature ~10 blocks."
               : kind === "not_registered"
-                ? "This account isn't registered in the pool yet — there is no shielded balance to withdraw."
+                ? "This account isn't registered in the pool yet - there is no shielded balance to withdraw."
                 : `Withdrawal failed: ${walletErrorMessage(err)}`,
       });
     }
@@ -93,8 +93,8 @@ export default function WithdrawPanel({
         outcome={phase.outcome}
         operation="Unshield"
         confirmedTitle="Unshielded"
-        confirmedBody="Withdrawal confirmed — execution succeeded. This leg is public: the recipient address and amount are visible on-chain. No on-chain record names the source balance — though timing and amount correlation with public deposits is always possible."
-        revertedBody="The withdrawal was included but reverted — nothing left the pool. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
+        confirmedBody="Withdrawal confirmed - execution succeeded. This leg is public: the recipient address and amount are visible on-chain. No on-chain record names the source balance - though timing and amount correlation with public deposits is always possible."
+        revertedBody="The withdrawal was included but reverted - nothing left the pool. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
         onBack={onBack}
       />
     );
@@ -109,7 +109,7 @@ export default function WithdrawPanel({
       </h2>
       <p className="mt-2 text-sm text-white/50">
         Withdraws shielded STRK back to a public address.{" "}
-        <strong className="text-white/70">This leg is public</strong> — the
+        <strong className="text-white/70">This leg is public</strong> - the
         recipient and amount appear on-chain. No on-chain record names the
         depositing org, but timing and amounts are public too: unshielding a
         matching amount right after a shield is trivially correlatable.

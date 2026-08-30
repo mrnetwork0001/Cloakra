@@ -40,7 +40,7 @@ const TX_LABEL: Record<ReceiptVerification["transaction"], string> = {
 
 /**
  * Public receipt verification: pure math plus two public RPC reads. Verifies
- * the org's ATTESTATION — the shielded transfer itself is unverifiable by
+ * the org's ATTESTATION - the shielded transfer itself is unverifiable by
  * design, and the page says so.
  */
 export default function VerifyPage() {
@@ -52,7 +52,7 @@ export default function VerifyPage() {
     try {
       receipt = JSON.parse(input);
     } catch {
-      setState({ kind: "error", message: "That isn't valid JSON — paste the whole receipt file." });
+      setState({ kind: "error", message: "That isn't valid JSON - paste the whole receipt file." });
       return;
     }
     setState({ kind: "verifying" });
@@ -60,7 +60,7 @@ export default function VerifyPage() {
       const result = await verifyReceipt(receipt);
       setState({ kind: "done", receipt, result });
     } catch {
-      setState({ kind: "error", message: "Verification crashed — is this a Cloakra receipt file?" });
+      setState({ kind: "error", message: "Verification crashed - is this a Cloakra receipt file?" });
     }
   }, [input]);
 
@@ -76,7 +76,7 @@ export default function VerifyPage() {
         Paste a <code>cloakra-receipt-v1</code> file. A receipt is the paying
         org&apos;s <strong className="text-white/70">signed attestation</strong>{" "}
         of who was paid what in which pool transaction. Verification proves the
-        attestation — the commitment math, the org account&apos;s signature
+        attestation - the commitment math, the org account&apos;s signature
         (checked on-chain), and that the referenced transaction settled and
         touched the STRK20 pool. What it cannot prove is the shielded
         transfer&apos;s contents: the pool keeps those private by design, so a
@@ -118,9 +118,9 @@ export default function VerifyPage() {
         >
           <p className="text-sm font-medium text-white">
             {state.result.ok
-              ? "Attestation verifies — the signing account stands behind this receipt"
+              ? "Attestation verifies - the signing account stands behind this receipt"
               : state.result.structure && state.result.merkle && state.result.signature === null
-                ? "Inconclusive — the chain could not be reached for the signature check"
+                ? "Inconclusive - the chain could not be reached for the signature check"
                 : "Receipt does NOT verify"}
           </p>
           <ul className="mt-3 space-y-2">
@@ -133,7 +133,7 @@ export default function VerifyPage() {
               ok={state.result.signature}
               label={
                 state.result.signature === null
-                  ? "Org signature — could not reach the chain to check"
+                  ? "Org signature - could not reach the chain to check"
                   : "Org account signed this run (checked on-chain)"
               }
             />

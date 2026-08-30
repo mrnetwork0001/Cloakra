@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import { RPC_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Cloakra — App",
+  title: "Cloakra - App",
   description:
     "Shield, split, pay, and unshield STRK through the STRK20 privacy pool on Starknet mainnet.",
 };
@@ -39,7 +39,7 @@ export default function AppPage() {
       <main className="mx-auto max-w-6xl px-6 py-10">
         <p className="mb-8 text-sm text-white/50">
           Connect a privacy-enabled wallet (Ready) on Starknet mainnet.
-          Everything here signs through your wallet — Cloakra holds no keys and
+          Everything here signs through your wallet - Cloakra holds no keys and
           reads no balances without your consent.
         </p>
 

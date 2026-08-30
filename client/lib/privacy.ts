@@ -1,9 +1,9 @@
 /**
- * Pre-send privacy honesty checks. The pool hides recipients and amounts —
+ * Pre-send privacy honesty checks. The pool hides recipients and amounts -
  * but timing and amount correlation against PUBLIC legs can re-link them,
  * and the classic mistakes are mechanical. These checks read only the payer's
  * own public footprint (data anyone can see) and warn before the wallet ever
- * opens. They never block — they make the trade-off a choice.
+ * opens. They never block - they make the trade-off a choice.
  *
  * Matching is deliberately APPROXIMATE (±1% with a floor): a real observer
  * is not defeated by dust-edits, so neither is this check. The check is
@@ -22,7 +22,7 @@ export interface PrivacyWarning {
 /** Starknet blocks measured live at ~1.7s (200-block sample, 2026-08-25).
  * 2100 blocks ≈ one hour. */
 const RECENT_BLOCKS = 2_100;
-/** ≈19 hours of lookback at the measured rate — bounded for speed. */
+/** ≈19 hours of lookback at the measured rate - bounded for speed. */
 const CHECK_LOOKBACK_BLOCKS = 40_000;
 /** How many recent deposits the echo checks consider. */
 const MAX_DEPOSITS_CHECKED = 30;
@@ -31,7 +31,7 @@ const MAX_FEE_MULTIPLES = 10;
 const approxMinutes = (blocks: number) =>
   Math.max(1, Math.round((blocks * 1.7) / 60));
 
-/** ±1% band with a 0.01 STRK floor — observers match approximately; so do we. */
+/** ±1% band with a 0.01 STRK floor - observers match approximately; so do we. */
 export function closeTo(a: bigint, b: bigint): boolean {
   if (b <= 0n) return false;
   const diff = a > b ? a - b : b - a;
@@ -40,7 +40,7 @@ export function closeTo(a: bigint, b: bigint): boolean {
   return diff <= tol;
 }
 
-/** Pure core — testable without a chain. Entries are newest-first. */
+/** Pure core - testable without a chain. Entries are newest-first. */
 export function findCorrelations(opts: {
   entries: FootprintEntry[];
   currentBlock: number;
@@ -48,7 +48,7 @@ export function findCorrelations(opts: {
   poolFee: bigint | null;
   kind: "transfer" | "withdraw";
   /** Unshield to the payer's own address: linkage reveals a round-trip, not
-   * a counterparty — same facts, lower stakes. */
+   * a counterparty - same facts, lower stakes. */
   toSelf?: boolean;
 }): PrivacyWarning[] {
   const { entries, currentBlock, amounts, poolFee, kind, toSelf } = opts;
@@ -58,33 +58,33 @@ export function findCorrelations(opts: {
   const deposits = entries.filter((e) => e.kind === "deposit");
 
   // Timing. A pre-confirmed deposit (null block, sorted newest) is by
-  // definition seconds old — the moment of MAXIMAL correlation, never skipped.
+  // definition seconds old - the moment of MAXIMAL correlation, never skipped.
   const newest = deposits[0];
   if (newest) {
     if (newest.blockNumber === null) {
       raw.push({
         severity,
-        message: `You have a deposit still awaiting its block — this is the moment of maximal timing correlation for a private ${kind}.`,
+        message: `You have a deposit still awaiting its block - this is the moment of maximal timing correlation for a private ${kind}.`,
       });
     } else {
       const delta = Math.max(0, currentBlock - newest.blockNumber);
       if (delta <= RECENT_BLOCKS) {
         raw.push({
           severity,
-          message: `Your last public deposit was ~${delta} blocks (≈${approxMinutes(delta)} min) ago. A private ${kind} now is cheaply timing-correlatable with it — waiting longer deepens the crowd it hides in.`,
+          message: `Your last public deposit was ~${delta} blocks (≈${approxMinutes(delta)} min) ago. A private ${kind} now is cheaply timing-correlatable with it - waiting longer deepens the crowd it hides in.`,
         });
       }
     }
   }
 
-  // Amount echoes — approximate, fee-multiple-aware, and pairwise sums.
+  // Amount echoes - approximate, fee-multiple-aware, and pairwise sums.
   const recent = deposits.slice(0, MAX_DEPOSITS_CHECKED);
   for (const amount of amounts) {
     for (const d of recent) {
       if (closeTo(amount, d.amount)) {
         raw.push({
           severity,
-          message: `${formatTokenAmount(amount)} STRK closely matches your public deposit of ${formatTokenAmount(d.amount)} STRK — observers pair legs by approximate amount, not exact digits.`,
+          message: `${formatTokenAmount(amount)} STRK closely matches your public deposit of ${formatTokenAmount(d.amount)} STRK - observers pair legs by approximate amount, not exact digits.`,
         });
         continue;
       }
@@ -97,8 +97,8 @@ export function findCorrelations(opts: {
               severity,
               message:
                 k === 1n
-                  ? `${formatTokenAmount(amount)} STRK ≈ your public deposit of ${formatTokenAmount(d.amount)} STRK minus the pool fee — the classic net-of-fee tell.`
-                  : `${formatTokenAmount(amount)} STRK ≈ your public deposit of ${formatTokenAmount(d.amount)} STRK minus ${k}× the pool fee — a batch-shaped tell.`,
+                  ? `${formatTokenAmount(amount)} STRK ≈ your public deposit of ${formatTokenAmount(d.amount)} STRK minus the pool fee - the classic net-of-fee tell.`
+                  : `${formatTokenAmount(amount)} STRK ≈ your public deposit of ${formatTokenAmount(d.amount)} STRK minus ${k}× the pool fee - a batch-shaped tell.`,
             });
             break;
           }
@@ -112,7 +112,7 @@ export function findCorrelations(opts: {
         if (closeTo(amount, pairPool[i].amount + pairPool[j].amount)) {
           raw.push({
             severity,
-            message: `${formatTokenAmount(amount)} STRK ≈ the sum of two of your public deposits (${formatTokenAmount(pairPool[i].amount)} + ${formatTokenAmount(pairPool[j].amount)}) — observers add rows too.`,
+            message: `${formatTokenAmount(amount)} STRK ≈ the sum of two of your public deposits (${formatTokenAmount(pairPool[i].amount)} + ${formatTokenAmount(pairPool[j].amount)}) - observers add rows too.`,
           });
           break outer;
         }
@@ -134,13 +134,13 @@ export function findCorrelations(opts: {
     out.push({
       severity: "medium",
       message:
-        "This unshield goes to your own address — the correlations above reveal your own round-trip, not a counterparty.",
+        "This unshield goes to your own address - the correlations above reveal your own round-trip, not a counterparty.",
     });
   }
   return out;
 }
 
-/** Chain-backed assessment. Degraded inputs surface as warnings — a check
+/** Chain-backed assessment. Degraded inputs surface as warnings - a check
  * that silently skipped its own coverage would be a false clean bill. */
 export async function assessPrivacy(
   address: string,
@@ -165,13 +165,13 @@ export async function assessPrivacy(
     warnings.push({
       severity: "medium",
       message:
-        "The footprint scan was incomplete — matching deposits may exist that this check did not see.",
+        "The footprint scan was incomplete - matching deposits may exist that this check did not see.",
     });
   }
   if (poolFee === null) {
     warnings.push({
       severity: "medium",
-      message: "The pool fee could not be read — fee-offset echoes were not checked.",
+      message: "The pool fee could not be read - fee-offset echoes were not checked.",
     });
   }
   return warnings.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "high" ? -1 : 1));

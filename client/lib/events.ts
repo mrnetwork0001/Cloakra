@@ -1,17 +1,17 @@
 /**
  * The account's PUBLIC pool footprint, read from the pool's events over our
- * own RPC. This is exactly — and only — what any block explorer can see:
+ * own RPC. This is exactly - and only - what any block explorer can see:
  * the ERC-20 legs. Private transfers and splits emit nothing linkable here.
  *
  * Event layouts verified against the deployed pool ABI (2026-08-19):
  *   Deposit    keys=[selector, user_addr, token]  data=[amount]           (1 felt)
  *   Withdrawal keys=[selector, to_addr,   token]  data=[EncUserAddr(3), amount] (4 felts)
- * Never attribute by transaction sender — private txs are relayed, so the
+ * Never attribute by transaction sender - private txs are relayed, so the
  * sender is the relayer for every user. Events are the only truth.
  *
  * Scan design (verified live): nodes page chronologically ASCENDING and may
  * return empty pages with a continuation token while they scan. A forward
- * scan capped by pages therefore drops the NEWEST events — so we scan
+ * scan capped by pages therefore drops the NEWEST events - so we scan
  * BACKWARD in sub-ranges from the latest block down to the pool's deployment
  * era. Newest entries are always complete; running out of budget drops only
  * the oldest, which is what the UI says.
@@ -46,7 +46,7 @@ export interface FootprintEntry {
 const DATA_WIDTH = { deposit: 1, withdrawal: 4 } as const;
 const AMOUNT_INDEX = { deposit: 0, withdrawal: 3 } as const;
 
-/** Pure per-event parser — returns null for layout drift (unknown widths). */
+/** Pure per-event parser - returns null for layout drift (unknown widths). */
 export function parseFootprintEvent(ev: {
   keys: string[];
   data: string[];
@@ -73,7 +73,7 @@ export async function fetchPublicFootprint(
 ): Promise<{ entries: FootprintEntry[]; truncated: boolean; skipped: number }> {
   const provider = getProvider();
   const latest = await provider.getBlockNumber();
-  // One deterministic felt spelling — key matching is by value, but never
+  // One deterministic felt spelling - key matching is by value, but never
   // hand the node an ambiguous padding.
   const filterAddress = "0x" + BigInt(address).toString(16);
 
@@ -99,7 +99,7 @@ export async function fetchPublicFootprint(
       }
       const page = await provider.getEvents({
         address: STRK20_POOL_ADDRESS,
-        // Position 0: either event selector. Position 1: our address — the
+        // Position 0: either event selector. Position 1: our address - the
         // depositor on Deposit, the public recipient on Withdrawal.
         keys: [[DEPOSIT_SELECTOR, WITHDRAWAL_SELECTOR], [filterAddress]],
         from_block: { block_number: lo },
@@ -111,7 +111,7 @@ export async function fetchPublicFootprint(
       for (const ev of page.events) {
         const parsed = parseFootprintEvent(ev);
         if (parsed === null) {
-          // Layout drift (pool upgrade?) — omit rather than show wrong numbers.
+          // Layout drift (pool upgrade?) - omit rather than show wrong numbers.
           skipped++;
           console.warn("[cloakra] unexpected event data width:", ev.data.length);
           continue;

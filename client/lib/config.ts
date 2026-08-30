@@ -2,7 +2,7 @@
  * Runtime configuration for the Cloakra dapp.
  *
  * The RPC URL is a NEXT_PUBLIC_ var because the browser makes the calls
- * directly. That means the Alchemy key ships to the client — that is normal for
+ * directly. That means the Alchemy key ships to the client - that is normal for
  * a dapp, but restrict the key by domain in the Alchemy dashboard rather than
  * treating it as a secret.
  */
@@ -14,7 +14,7 @@ export const SN_MAIN = "0x534e5f4d41494e";
 export const STRK20_POOL_ADDRESS =
   "0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812a";
 
-/** STRK on Starknet mainnet — the token Cloakra shields. */
+/** STRK on Starknet mainnet - the token Cloakra shields. */
 export const STRK_TOKEN_ADDRESS =
   "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 

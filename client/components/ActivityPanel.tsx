@@ -16,7 +16,7 @@ type State =
   | { kind: "error" };
 
 /**
- * The account's public footprint — everything a block explorer can see about
+ * The account's public footprint - everything a block explorer can see about
  * its pool use, and nothing more. Reads pool events over our own RPC (public
  * data; no wallet involvement). The demo moment: deposits and withdrawals
  * are here; the splits and transfers between them are nowhere.
@@ -51,7 +51,7 @@ export default function ActivityPanel({ address }: { address: string }) {
         </button>
       </div>
       <p className="mt-2 text-sm text-white/50">
-        Everything the chain shows about this account&apos;s pool use — the
+        Everything the chain shows about this account&apos;s pool use - the
         public ERC-20 legs. Private transfers and splits never appear here.
       </p>
 
@@ -60,18 +60,18 @@ export default function ActivityPanel({ address }: { address: string }) {
           <p className="text-sm text-white/40">Reading pool events…</p>
         ) : state.kind === "error" ? (
           <p className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-200">
-            Could not read pool events — refresh to retry.
+            Could not read pool events - refresh to retry.
           </p>
         ) : state.entries.length === 0 ? (
           state.truncated ? (
             <p className="text-sm text-white/40">
-              Couldn&apos;t scan the full window before the page limit — refresh
+              Couldn&apos;t scan the full window before the page limit - refresh
               to continue. No entries found so far.
             </p>
           ) : (
             <p className="text-sm text-white/40">
               No public pool legs yet. After your first shield, the deposit will
-              show up here — and only the deposit.
+              show up here - and only the deposit.
             </p>
           )
         ) : (
@@ -110,7 +110,7 @@ export default function ActivityPanel({ address }: { address: string }) {
             {state.entries.map((entry, i) => (
               <li
                 // One tx can legally carry several same-kind events (batch
-                // deposits) — include the position for a collision-free key.
+                // deposits) - include the position for a collision-free key.
                 key={`${entry.txHash}-${entry.kind}-${i}`}
                 className="flex items-center justify-between gap-3 bg-white/[0.02] px-4 py-3"
               >
@@ -141,14 +141,14 @@ export default function ActivityPanel({ address }: { address: string }) {
         )}
         {state.kind === "loaded" && state.truncated ? (
           <p className="mt-2 text-xs text-white/35">
-            Newest entries shown — the scan budget ran out before reaching the
+            Newest entries shown - the scan budget ran out before reaching the
             oldest history.
           </p>
         ) : null}
         {state.kind === "loaded" && state.skipped > 0 ? (
           <p className="mt-2 text-xs text-white/35">
             {state.skipped} entr{state.skipped === 1 ? "y" : "ies"} omitted:
-            unrecognized event layout (pool upgrade?) — amounts would not be
+            unrecognized event layout (pool upgrade?) - amounts would not be
             trustworthy.
           </p>
         ) : null}

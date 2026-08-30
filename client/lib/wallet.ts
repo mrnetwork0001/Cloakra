@@ -13,14 +13,14 @@ import { RPC_URL } from "./config";
 
 /**
  * Derived from the store rather than imported from
- * `@starknet-io/get-starknet-wallet-standard`, deliberately — see the note on
+ * `@starknet-io/get-starknet-wallet-standard`, deliberately - see the note on
  * the cast in `connectWallet`.
  */
 export type DiscoveredWallet = ReturnType<Store["getWallets"]>[number];
 
 let store: Store | undefined;
 
-/** Lazily create the discovery store — browser only. */
+/** Lazily create the discovery store - browser only. */
 export function getStore(): Store {
   if (!store) store = createStore();
   return store;

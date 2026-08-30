@@ -9,13 +9,13 @@ const grotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Cloakra — Shielded Capital Allocation on Starknet",
+  title: "Cloakra - Shielded Capital Allocation on Starknet",
   description:
     "Grants, bug bounties, and contributor payouts settled privately through the STRK20 privacy pool on Starknet mainnet. Who receives and how much stays private; the public legs stay public.",
   openGraph: {
-    title: "Cloakra — Shielded Capital Allocation on Starknet",
+    title: "Cloakra - Shielded Capital Allocation on Starknet",
     description:
-      "Private team payouts, bounties, and grants over the STRK20 privacy pool — live on Starknet mainnet.",
+      "Private team payouts, bounties, and grants over the STRK20 privacy pool - live on Starknet mainnet.",
     type: "website",
   },
 };

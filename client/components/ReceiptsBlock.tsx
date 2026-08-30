@@ -33,9 +33,9 @@ function download(receipt: PayoutReceipt) {
 
 /**
  * Signed receipts for the last settled run. Lives OUTSIDE the tab/account
- * remount boundary — the run's recipient list is unrecoverable from the chain
+ * remount boundary - the run's recipient list is unrecoverable from the chain
  * (the settlement is shielded), so this offer must survive navigation. A
- * receipt is the org's signed ATTESTATION of who was paid what in which tx —
+ * receipt is the org's signed ATTESTATION of who was paid what in which tx -
  * it is not, and cannot be, a chain-verified transfer record.
  */
 export default function ReceiptsBlock({
@@ -68,8 +68,8 @@ export default function ReceiptsBlock({
       setState({
         kind: "error",
         message: isUserRefusal(err)
-          ? "Signature declined in the wallet — no receipts were created."
-          : (err as Error).message || "Could not sign the run — try again.",
+          ? "Signature declined in the wallet - no receipts were created."
+          : (err as Error).message || "Could not sign the run - try again.",
       });
     }
   }, [account, run]);
@@ -83,7 +83,7 @@ export default function ReceiptsBlock({
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
         <p className="text-sm font-medium text-white/80">Signed receipts</p>
         <p className="mt-1 text-xs text-white/45">
-          Hand each file only to its recipient — a receipt reveals that
+          Hand each file only to its recipient - a receipt reveals that
           recipient&apos;s amount to whoever holds it, and nothing about anyone
           else. Anyone can check one at <code>/verify</code>.
         </p>
@@ -115,7 +115,7 @@ export default function ReceiptsBlock({
           : `Attest the last settled run (${run.operation})`}
       </p>
       <p className="mt-1 text-xs text-white/45">
-        One wallet signature produces a receipt file per recipient — your
+        One wallet signature produces a receipt file per recipient - your
         signed statement of who was paid what in{" "}
         <a
           className="text-white/60 underline underline-offset-4 hover:text-white"
@@ -125,14 +125,14 @@ export default function ReceiptsBlock({
         >
           {shorten(run.txHash, 10, 4)}
         </a>
-        . A receipt proves the attestation, not the shielded transfer itself —
+        . A receipt proves the attestation, not the shielded transfer itself -
         the pool keeps transaction contents private by design. Off-chain and
         free. Available only in this session: the recipient list cannot be
         rebuilt from the chain, so a reload discards this offer.
       </p>
       {run.outcomeKind === "submitted" ? (
         <p className="mt-2 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-200">
-          This run&apos;s receipt didn&apos;t arrive before the wait timed out —
+          This run&apos;s receipt didn&apos;t arrive before the wait timed out -
           confirm on Voyager that it SUCCEEDED before attesting to it.
         </p>
       ) : null}

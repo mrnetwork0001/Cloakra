@@ -39,13 +39,13 @@ export function usePrivacyGate(address: string): PrivacyGate {
       setChecking(true);
       try {
         const found = await assessPrivacy(address, amounts, kind, options);
-        if (runRef.current !== run) return false; // superseded — stay silent
+        if (runRef.current !== run) return false; // superseded - stay silent
         if (found.length === 0) return true;
         setWarnings(found);
         return false;
       } catch {
         if (runRef.current !== run) return false;
-        // The check must never brick a send — but failing silently would be
+        // The check must never brick a send - but failing silently would be
         // dishonest. Surface it and let the user proceed deliberately.
         setWarnings([
           {
@@ -67,7 +67,7 @@ export function usePrivacyGate(address: string): PrivacyGate {
 
 /**
  * The warning box + decision buttons. `onProceed` must re-invoke the panel's
- * submit with force=true — an explicit parameter, so an approval can never
+ * submit with force=true - an explicit parameter, so an approval can never
  * outlive the exact submission it was granted for.
  */
 export function PrivacyWarnings({
@@ -99,7 +99,7 @@ export function PrivacyWarnings({
         amounts and timing against your own public legs from the last ~day.
         Longer history, other patterns, and what recipients do after cashing
         out are outside it. Small tweaks to the amount do <strong>not</strong>{" "}
-        help — observers match approximately too. Waiting longer does.
+        help - observers match approximately too. Waiting longer does.
       </p>
       <div className="mt-3 flex gap-2">
         <button

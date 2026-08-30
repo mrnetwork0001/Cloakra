@@ -1,6 +1,6 @@
 /**
  * The last settled payout run, kept module-side. Exists because the run's
- * recipient list is UNRECOVERABLE once component state dies — the settlement
+ * recipient list is UNRECOVERABLE once component state dies - the settlement
  * tx is shielded, so the chain cannot reproduce who was paid what. Without
  * this store, Back / a tab switch / an account switch silently destroys the
  * only chance to ever sign receipts for a run.
@@ -14,7 +14,7 @@ import type { RunRecipient } from "./receipts";
 export interface SettledRun {
   operation: string;
   txHash: string;
-  /** The account that signed the settlement — only it may sign receipts. */
+  /** The account that signed the settlement - only it may sign receipts. */
   payer: string;
   recipients: RunRecipient[];
   /** "confirmed" = receipt-ready; "submitted" = user must confirm on the

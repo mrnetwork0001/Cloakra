@@ -1,6 +1,6 @@
 /**
  * The design system's visual signature: an iridescent aurora panel, pure CSS
- * (layered radial/conic gradients under blur) — no images, no requests.
+ * (layered radial/conic gradients under blur) - no images, no requests.
  */
 export default function AuroraPanel({
   variant = 0,

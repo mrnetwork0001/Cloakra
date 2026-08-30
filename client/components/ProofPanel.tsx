@@ -15,7 +15,7 @@ interface HashStatus {
 }
 
 /**
- * Verifies the submission's own mainnet hashes live in the viewer's browser —
+ * Verifies the submission's own mainnet hashes live in the viewer's browser -
  * finality AND execution status straight from a Starknet node. The claim
  * "three mainnet transactions" is checked against the chain on every load,
  * not asserted by copy.
@@ -57,7 +57,7 @@ export default function ProofPanel() {
         .catch((err: unknown) => {
           if (runRef.current !== run) return;
           // A definitive "no such tx" from the node is the one failure this
-          // panel exists to expose — never blur it into a network error.
+          // panel exists to expose - never blur it into a network error.
           const notFound =
             err instanceof RpcError && err.isType("TXN_HASH_NOT_FOUND");
           setStatuses((prev) =>
@@ -80,7 +80,7 @@ export default function ProofPanel() {
       </h2>
       <p className="mt-2 text-sm text-white/50">
         The mainnet transactions recorded in{" "}
-        <code className="text-white/60">strk20.json</code> — verified against
+        <code className="text-white/60">strk20.json</code> - verified against
         Starknet in your browser right now, not claimed.
       </p>
       <ul className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10">

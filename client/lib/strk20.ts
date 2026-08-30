@@ -2,8 +2,8 @@
  * STRK20 capability detection and wallet-mediated reads.
  *
  * Least-privilege rule (STRK20_INTEGRATION_PLAN.md §5): capability detection is
- * a version query only. `strk20Balances` is a consent-gated balance read — the
- * wallet prompts the user — so it is never used to feature-detect and is only
+ * a version query only. `strk20Balances` is a consent-gated balance read - the
+ * wallet prompts the user - so it is never used to feature-detect and is only
  * called on an explicit user action.
  */
 
@@ -31,14 +31,14 @@ function versionAtLeast(version: string, [major, minor]: readonly [number, numbe
 /**
  * True when the wallet's dapp-facing API is STRK20-capable (wallet-API ≥ 0.10).
  * A wallet that predates the method, rejects the request, or reports only
- * older versions is simply not capable — never an error surfaced to the user.
+ * older versions is simply not capable - never an error surfaced to the user.
  */
 export async function detectStrk20Support(
   wallet: DiscoveredWallet,
 ): Promise<boolean> {
   try {
     const versions = await walletV6.supportedWalletApi(
-      // Same nominal-duplication cast as connectWallet — see lib/wallet.ts.
+      // Same nominal-duplication cast as connectWallet - see lib/wallet.ts.
       wallet as Parameters<typeof walletV6.supportedWalletApi>[0],
     );
     return versions.some((v) => versionAtLeast(v, STRK20_MIN_WALLET_API));
@@ -48,7 +48,7 @@ export async function detectStrk20Support(
 }
 
 /**
- * The chain the WALLET is on — the one its transactions go to. Not the same
+ * The chain the WALLET is on - the one its transactions go to. Not the same
  * thing as `account.provider.getChainId()`, which reports our own RPC's chain
  * and is therefore always mainnet here regardless of the wallet's network.
  */
@@ -62,7 +62,7 @@ export async function getWalletChainId(
 
 /**
  * Race a wallet request against a timeout. Locked or slept extensions can
- * leave a background request pending forever with no popup and no rejection —
+ * leave a background request pending forever with no popup and no rejection -
  * the UI must never hang on one.
  */
 export function withTimeout<T>(
@@ -117,7 +117,7 @@ export function formatTokenAmount(raw: bigint, decimals = 18, places = 4): strin
   if (places === 0 || frac === 0n) return whole.toString();
   const fracStr = frac.toString().padStart(decimals, "0").slice(0, places);
   const out = `${whole}.${fracStr}`.replace(/\.?0+$/, "") || "0";
-  // A nonzero balance below the display precision must not render as "0" —
+  // A nonzero balance below the display precision must not render as "0" -
   // that is indistinguishable from an empty balance.
   if (out === "0" && raw > 0n) return `< 0.${"0".repeat(places - 1)}1`;
   return out;
@@ -142,7 +142,7 @@ export function walletErrorMessage(err: unknown): string {
  * (spec-typed) or as Error instances, so match on both. Codes from
  * starknet-types-0103 wallet-api/errors.d.ts: NOT_REGISTERED = 118,
  * INSUFFICIENT_PRIVATE_BALANCE = 119. "abort" is deliberately NOT treated as
- * refusal — AbortError-style infrastructure timeouts would misreport a
+ * refusal - AbortError-style infrastructure timeouts would misreport a
  * possibly-broadcast tx as declined and invite a duplicate submit.
  */
 export function walletErrorKind(err: unknown): WalletErrorKind {
@@ -156,7 +156,7 @@ export function walletErrorKind(err: unknown): WalletErrorKind {
   return "unknown";
 }
 
-/** The Stark field prime — felts live below this; hashes and EVM junk may not. */
+/** The Stark field prime - felts live below this; hashes and EVM junk may not. */
 const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
 
 /**
@@ -172,7 +172,7 @@ export function parseAddress(input: string): string {
   const value = BigInt(trimmed);
   if (value >= FIELD_PRIME) {
     throw new Error(
-      "Not a valid Starknet address — this looks like a transaction hash.",
+      "Not a valid Starknet address - this looks like a transaction hash.",
     );
   }
   if (value === 0n) throw new Error("The zero address is not a recipient.");
@@ -192,7 +192,7 @@ export function isUserRefusal(err: unknown): boolean {
 }
 
 /**
- * Felts have many spellings (0x4718… vs 0x04718…, case-insensitive hex) —
+ * Felts have many spellings (0x4718… vs 0x04718…, case-insensitive hex) -
  * compare numerically. Applies to addresses AND chain ids alike.
  */
 export function sameFelt(a: string, b: string): boolean {
@@ -269,13 +269,13 @@ export function buildWithdraw(
 }
 
 export type SubmitOutcome =
-  /** Accepted AND execution SUCCEEDED — the only true success. */
+  /** Accepted AND execution SUCCEEDED - the only true success. */
   | { kind: "confirmed"; txHash: string }
-  /** Accepted on-chain but execution REVERTED — no value moved. */
+  /** Accepted on-chain but execution REVERTED - no value moved. */
   | { kind: "reverted"; txHash: string }
   /** waitForTransaction diagnosed a dead tx (mempool eviction etc.). */
   | { kind: "failed"; txHash: string; message: string }
-  /** Our wait ceiling elapsed — genuinely unknown, not failed. */
+  /** Our wait ceiling elapsed - genuinely unknown, not failed. */
   | { kind: "submitted"; txHash: string };
 
 const WAIT_TIMEOUT = Symbol("wait-timeout");
@@ -284,7 +284,7 @@ const WAIT_TIMEOUT = Symbol("wait-timeout");
  * Execute STRK20 actions through the wallet, then wait for the receipt with a
  * ceiling. Three traps this must not fall into:
  * - waitForTransaction RESOLVES for REVERTED txs (default errorStates is
- *   empty — finality only), so the receipt's execution status must be checked
+ *   empty - finality only), so the receipt's execution status must be checked
  *   or a failed deposit reads as success;
  * - it REJECTS with terminal diagnoses (mempool eviction) that must not be
  *   conflated with our benign timeout;
@@ -313,7 +313,7 @@ export async function executeStrk20(
     );
     if (result === null) {
       updateSubmission(id, { kind: "not_sent" });
-      throw new Error("The wallet did not respond — unlock it and try again.");
+      throw new Error("The wallet did not respond - unlock it and try again.");
     }
     txHash = result.transaction_hash;
   } catch (err) {

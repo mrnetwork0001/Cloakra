@@ -18,7 +18,7 @@ import { usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 
-/** Kept aside for gas on Max — wallet flows sponsor gas for pool ops, but the
+/** Kept aside for gas on Max - wallet flows sponsor gas for pool ops, but the
  * ERC-20 approve leg may not be covered on every build. */
 const GAS_RESERVE = 10n ** 18n; // 1 STRK
 
@@ -36,7 +36,7 @@ export default function ShieldPanel({
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
 
-  // Public balance over our own RPC — no wallet involvement, no consent
+  // Public balance over our own RPC - no wallet involvement, no consent
   // needed. Refreshes when the form is (re)shown; keeps last good on failure.
   useEffect(() => {
     if (phase.kind !== "form" && phase.kind !== "error") return;
@@ -51,7 +51,7 @@ export default function ShieldPanel({
     };
   }, [address, phase.kind]);
 
-  // Max re-reads balance and fee at click time — the mounted values can be
+  // Max re-reads balance and fee at click time - the mounted values can be
   // stale (e.g. right after a shield settles).
   const onMax = useCallback(async () => {
     try {
@@ -67,14 +67,14 @@ export default function ShieldPanel({
       if (max <= freshFee) {
         setPhase({
           kind: "error",
-          message: `Balance (minus a 1 STRK gas reserve) wouldn't exceed the ${formatTokenAmount(freshFee)} STRK pool fee — nothing would be shielded.`,
+          message: `Balance (minus a 1 STRK gas reserve) wouldn't exceed the ${formatTokenAmount(freshFee)} STRK pool fee - nothing would be shielded.`,
         });
         return;
       }
       setPhase({ kind: "form" });
       setAmount(formatTokenAmountExact(max));
     } catch {
-      setPhase({ kind: "error", message: "Could not read balance/fee — try again." });
+      setPhase({ kind: "error", message: "Could not read balance/fee - try again." });
     }
   }, [address]);
 
@@ -103,13 +103,13 @@ export default function ShieldPanel({
         getPublicStrkBalance(address),
       ]);
     } catch {
-      setPhase({ kind: "error", message: "Could not read the pool fee — try again." });
+      setPhase({ kind: "error", message: "Could not read the pool fee - try again." });
       return;
     }
     if (fee !== null && freshFee !== fee) {
       setPhase({
         kind: "error",
-        message: `The pool fee changed to ${formatTokenAmount(freshFee)} STRK — review and press Shield again.`,
+        message: `The pool fee changed to ${formatTokenAmount(freshFee)} STRK - review and press Shield again.`,
       });
       return;
     }
@@ -124,7 +124,7 @@ export default function ShieldPanel({
     if (raw <= freshFee) {
       setPhase({
         kind: "error",
-        message: `The ${formatTokenAmount(freshFee)} STRK pool fee is deducted from the deposit — shield more than the fee or nothing arrives.`,
+        message: `The ${formatTokenAmount(freshFee)} STRK pool fee is deducted from the deposit - shield more than the fee or nothing arrives.`,
       });
       return;
     }
@@ -139,7 +139,7 @@ export default function ShieldPanel({
         kind: "error",
         message:
           kind === "refused"
-            ? "Declined in the wallet. If you had already signed the first (STRK approval) step, that approval to the pool may remain — it can only ever be spent by a deposit you sign yourself."
+            ? "Declined in the wallet. If you had already signed the first (STRK approval) step, that approval to the pool may remain - it can only ever be spent by a deposit you sign yourself."
             : kind === "not_registered"
               ? "This account isn't registered in the pool yet, and Ready won't register it as part of a dapp-initiated deposit. Open the Ready extension, activate the private balance for this account (it signs a one-time registration), then shield here again."
               : `Shield failed: ${walletErrorMessage(err)}`,
@@ -153,8 +153,8 @@ export default function ShieldPanel({
         outcome={phase.outcome}
         operation="Shield"
         confirmedTitle="Shielded"
-        confirmedBody={`Deposit confirmed on mainnet — execution succeeded. This account is now registered in the pool. ${COPY.noteMaturity}`}
-        revertedBody="The deposit was included but reverted — no STRK entered the pool. Possible causes: a fee change between quote and execution, or insufficient public balance at execution."
+        confirmedBody={`Deposit confirmed on mainnet - execution succeeded. This account is now registered in the pool. ${COPY.noteMaturity}`}
+        revertedBody="The deposit was included but reverted - no STRK entered the pool. Possible causes: a fee change between quote and execution, or insufficient public balance at execution."
         onBack={() => {
           setAmount("");
           setPhase({ kind: "form" });
@@ -172,7 +172,7 @@ export default function ShieldPanel({
       </h2>
       <p className="mt-2 text-sm text-white/50">
         Moves STRK from your public balance into the pool as an encrypted note.
-        This deposit — your address and amount — is the public leg.
+        This deposit - your address and amount - is the public leg.
       </p>
 
       <div className="mt-4 flex gap-2">

@@ -5,7 +5,7 @@ export default function NotFound() {
     <main className="mx-auto max-w-xl px-6 py-24">
       <p className="text-sm font-medium tracking-[0.2em] text-white/40 uppercase">404</p>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-        Nothing shielded here — the page just doesn&apos;t exist.
+        Nothing shielded here - the page just doesn&apos;t exist.
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-white/50">
         The pool hides balances, not routes. Try the landing page or the app.

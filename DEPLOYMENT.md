@@ -1,13 +1,13 @@
 # Deploying Cloakra
 
-Five minutes on Vercel. The app is a static-plus-client Next.js build — no
+Five minutes on Vercel. The app is a static-plus-client Next.js build - no
 server secrets, no databases.
 
 ## Steps
 
 1. **Import the repo** at [vercel.com/new](https://vercel.com/new) →
    `mrnetwork0001/Cloakra`.
-2. **Root Directory: `client`** — this is the one setting that matters.
+2. **Root Directory: `client`** - this is the one setting that matters.
    (`vercel.json` at the repo root pins the framework and build command; the
    `prebuild` hook syncs `strk20.json` into the client automatically.)
 3. **Environment variable** (Production + Preview):
@@ -22,7 +22,7 @@ server secrets, no databases.
 ## Hackathon notes
 
 - **Do not fill `demo_url` in `strk20.json`.** The sprint hub auto-detects the
-  most recent successful deployment that Vercel reports to GitHub — declaring
+  most recent successful deployment that Vercel reports to GitHub - declaring
   it is only a fallback.
 - The deployment must be reachable publicly (no Vercel password protection).
 
