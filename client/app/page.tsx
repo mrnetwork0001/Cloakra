@@ -162,12 +162,6 @@ export default function Home() {
             <a className="transition hover:text-white" href="#proof">Proof</a>
             <a className="transition hover:text-white" href="#faq">FAQ</a>
           </div>
-          <Link
-            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition hover:bg-white/90"
-            href="/app"
-          >
-            Open the app
-          </Link>
         </nav>
       </header>
 
