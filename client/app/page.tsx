@@ -183,30 +183,30 @@ export default function Home() {
                 "radial-gradient(closest-side, rgba(255,255,255,0.055), transparent)",
             }}
           />
-          <div className="relative mx-auto max-w-4xl px-6 text-center">
-            <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          <div className="relative mx-auto max-w-5xl px-6 text-center">
+            <h1 className="mx-auto max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
               Pay the team. Publish no salary table.
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/55">
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/70 sm:text-xl">
               Shielded grants, bug bounties, and contributor payouts on Starknet.
               Who receives and how much stays private, while the public legs
               stay honestly, verifiably public.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
               <Link
                 href="/app"
-                className="rounded-full bg-white px-6 py-2.5 text-sm font-medium text-black transition hover:bg-white/90"
+                className="rounded-full bg-white px-7 py-3 text-base font-medium text-black transition hover:bg-white/90"
               >
                 Open the app
               </Link>
               <a
                 href="#proof"
-                className="rounded-full border border-white/20 px-6 py-2.5 text-sm font-medium text-white/80 transition hover:border-white/40 hover:text-white"
+                className="rounded-full border border-white/25 px-7 py-3 text-base font-medium text-white/85 transition hover:border-white/45 hover:text-white"
               >
                 Verify the mainnet proof
               </a>
             </div>
-            <div className="mx-auto mt-4 max-w-md">
+            <div className="mx-auto mt-6 max-w-xl">
               <LiveFee />
             </div>
 

@@ -29,9 +29,9 @@ export default function LiveFee() {
   }, []);
 
   return (
-    <p className="mt-3 text-xs text-white/40">
+    <p className="mt-3 text-sm leading-relaxed text-white/55">
       Flat pool fee per private operation right now:{" "}
-      <span className="text-white/70">
+      <span className="text-white/85">
         {fee !== null ? `${formatTokenAmount(fee)} STRK` : failed ? "unreadable (RPC)" : "…"}
       </span>{" "}
       - read live from the pool contract in your browser, never hardcoded.
