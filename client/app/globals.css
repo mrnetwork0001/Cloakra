@@ -22,8 +22,8 @@ h1 {
 /* Dot-grid canvas behind every page, including the app. Fixed so it reads as
    a stable surface the content moves over rather than a scrolling texture. */
 body {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
-  background-size: 72px 72px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.28) 1.4px, transparent 1.4px);
+  background-size: 48px 48px;
   background-position: 0 0;
   background-attachment: fixed;
 }
