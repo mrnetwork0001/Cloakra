@@ -54,17 +54,6 @@ export default function SiteFooter({ wide = false }: { wide?: boolean }) {
   const width = wide ? "max-w-[1536px]" : "max-w-6xl";
   return (
     <footer className="relative overflow-hidden border-t border-white/10">
-      {/* faint grid, as on the reference */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
-          backgroundSize: "104px 104px",
-        }}
-      />
-
       <div className={`relative mx-auto grid ${width} gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-10`}>
         <div>
           <div className="flex items-center gap-3">
