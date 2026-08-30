@@ -6,11 +6,17 @@
   }
 }
 
-/* Display face for headings - the dev-tool reference's typographic voice. */
+/* Headings share the body face (Inter) and lean on weight + tight tracking
+   for hierarchy, as the reference does - no display typeface. */
 h1,
 h2,
 h3 {
-  font-family: var(--font-grotesk), var(--font-inter), sans-serif;
+  font-family: var(--font-inter), sans-serif;
+  letter-spacing: -0.03em;
+}
+
+h1 {
+  letter-spacing: -0.04em;
 }
 
 ::selection {
