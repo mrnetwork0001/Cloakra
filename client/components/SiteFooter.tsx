@@ -50,11 +50,10 @@ function ShieldMark({ className }: { className?: string }) {
   );
 }
 
-export default function SiteFooter({ wide = false }: { wide?: boolean }) {
-  const width = wide ? "max-w-[1536px]" : "max-w-6xl";
+export default function SiteFooter() {
   return (
     <footer className="relative overflow-hidden border-t border-white/10">
-      <div className={`relative mx-auto grid ${width} gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-10`}>
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-10">
         <div>
           <div className="flex items-center gap-3">
             <ShieldMark className="size-8 text-white" />
