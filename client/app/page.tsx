@@ -175,6 +175,14 @@ export default function Home() {
         {/* Hero */}
         <section className="relative overflow-hidden pt-20 pb-24 sm:pt-28">
           <MossVignette position="top" />
+          <div
+            aria-hidden
+            className="anim-drift pointer-events-none absolute top-[-10%] left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+            style={{
+              backgroundImage:
+                "radial-gradient(closest-side, rgba(255,255,255,0.055), transparent)",
+            }}
+          />
           <div className="relative mx-auto max-w-4xl px-6 text-center">
             <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
               Pay the team. Publish no salary table.
@@ -204,7 +212,11 @@ export default function Home() {
 
             <div className="relative mx-auto mt-14 max-w-3xl">
               <WindowFrame>
-                <div className="rounded-lg bg-black/40 p-4">
+                <div className="relative overflow-hidden rounded-lg bg-black/40 p-4">
+                  <div
+                    aria-hidden
+                    className="anim-sweep pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-12 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"
+                  />
                   <p className="mb-2 text-left text-[10px] tracking-[0.2em] text-white/25 uppercase">
                     shield → allocate privately → unshield
                   </p>

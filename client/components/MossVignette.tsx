@@ -10,7 +10,7 @@ export default function MossVignette({ position }: { position: "top" | "bottom" 
       className={`pointer-events-none absolute inset-x-0 ${isTop ? "top-0" : "bottom-0"} h-[340px] overflow-hidden`}
     >
       <div
-        className="absolute inset-0"
+        className="anim-drift absolute inset-0"
         style={{
           backgroundImage: [
             "radial-gradient(60% 130% at 8% " + (isTop ? "0%" : "100%") + ", rgba(34,60,42,0.85), transparent 70%)",
