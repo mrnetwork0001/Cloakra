@@ -131,11 +131,6 @@ export default function SiteFooter() {
           </div>
         ))}
       </div>
-
-      <div className="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-white/10 px-6 py-6 text-xs text-white/30 md:px-10">
-        <span>Cloakra · Apache 2.0 · Built for the STRK20 Private Sprint</span>
-        <span>Live on Starknet mainnet</span>
-      </div>
     </footer>
   );
 }
