@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import type { WalletAccountV6 } from "starknet";
 import {
@@ -15,6 +16,7 @@ import TransferPanel from "./TransferPanel";
 import SplitPanel from "./SplitPanel";
 import WithdrawPanel from "./WithdrawPanel";
 import ActivityPanel from "./ActivityPanel";
+import ShieldedBalance from "./ShieldedBalance";
 import Orientation from "./Orientation";
 
 export type { WalletSession };
@@ -45,8 +47,27 @@ export default function AppShell() {
   );
 
   return (
-    <div className="space-y-6">
-      <WalletPanel onSession={setSession} />
+    <>
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-10">
+          <Link href="/" className="flex items-center gap-2 text-white">
+            <svg viewBox="0 0 32 32" className="size-5 text-white" aria-hidden>
+              <path
+                d="M16 5l9 3.5v7c0 5.5-3.8 9.6-9 11.5-5.2-1.9-9-6-9-11.5v-7L16 5z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+              <circle cx="16" cy="15.5" r="3.2" fill="currentColor" />
+            </svg>
+            <span className="text-sm font-semibold tracking-tight">Cloakra</span>
+          </Link>
+          <WalletPanel onSession={setSession} />
+        </nav>
+      </header>
+
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 md:px-10">
 
       {submissions.map((s) => (
         <p
@@ -199,11 +220,13 @@ export default function AppShell() {
                   disabled={session.wrongChain || busy}
                 />
               </div>
+              <ShieldedBalance key={session.address} account={session.account} />
               <ActivityPanel address={session.address} />
             </>
           ) : null}
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }
