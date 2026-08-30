@@ -38,11 +38,12 @@ export function ShieldDiagram() {
 
       <line x1="150" y1="83" x2="256" y2="83" stroke={S.wire} strokeWidth="1.5" />
       <path d="M256 83 l-8 -4 v8 z" fill={S.wire} />
+      <circle cx="154" cy="83" r="3" fill="#fff" className="anim-travel" style={{ ["--travel" as string]: "98px" }} />
       <text x="168" y="74" fontSize="10" fill={S.faint}>public: address + amount</text>
 
       <rect x="264" y="38" width="142" height="90" rx="12" fill={S.box} stroke={S.wire} />
       <text x="282" y="62" fontSize="11" fill={S.label}>STRK20 pool</text>
-      <rect x="282" y="74" width="106" height="34" rx="7" stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
+      <rect x="282" y="74" width="106" height="34" rx="7" stroke={S.wireDim} strokeDasharray="4 3" fill="none" className="anim-dash" />
       <text x="296" y="96" fontSize="13" fill={S.faint}>•••• note</text>
     </Frame>
   );
@@ -53,7 +54,7 @@ export function SplitDiagram() {
   const ys = [40, 70, 100, 130];
   return (
     <Frame viewBox="0 0 420 170">
-      <rect x="10" y="20" width="400" height="132" rx="12" stroke={S.wireDim} strokeDasharray="5 4" fill="none" />
+      <rect x="10" y="20" width="400" height="132" rx="12" stroke={S.wireDim} strokeDasharray="5 4" fill="none" className="anim-breathe" />
       <text x="24" y="40" fontSize="10" fill={S.faint}>inside the pool - unreadable</text>
 
       <rect x="30" y="70" width="96" height="42" rx="9" fill={S.box} stroke={S.wire} />
@@ -67,6 +68,7 @@ export function SplitDiagram() {
             stroke={S.wireDim}
             strokeDasharray="4 3"
             fill="none"
+            className="anim-dash"
           />
           <rect x="262" y={y} width="128" height="28" rx="7" fill={S.box} stroke={S.wireDim} />
           <text x="276" y={y + 19} fontSize="11" fill={S.faint}>0x•••• · ••••</text>
@@ -88,6 +90,7 @@ export function UnshieldDiagram() {
 
       <line x1="152" y1="83" x2="258" y2="83" stroke={S.wire} strokeWidth="1.5" />
       <path d="M258 83 l-8 -4 v8 z" fill={S.wire} />
+      <circle cx="156" cy="83" r="3" fill="#fff" className="anim-travel" style={{ ["--travel" as string]: "98px" }} />
       <text x="168" y="74" fontSize="10" fill={S.faint}>public: address + amount</text>
 
       <rect x="266" y="52" width="140" height="62" rx="10" fill={S.box} stroke={S.wire} />
@@ -96,7 +99,7 @@ export function UnshieldDiagram() {
       <text x="282" y="108" fontSize="11" fill={S.faint}>2 STRK</text>
 
       {/* severed link back to the deposit */}
-      <path d="M300 128 C 240 158, 120 158, 70 132" stroke={S.wireDim} strokeDasharray="3 5" fill="none" />
+      <path d="M300 128 C 240 158, 120 158, 70 132" stroke={S.wireDim} strokeDasharray="3 5" fill="none" className="anim-breathe" />
       <line x1="176" y1="140" x2="196" y2="152" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
       <line x1="196" y1="140" x2="176" y2="152" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
       <text x="206" y="152" fontSize="10" fill={S.faint}>no onchain link back</text>
@@ -108,21 +111,35 @@ export function UnshieldDiagram() {
 export function FlowDiagram() {
   const ys = [46, 74, 102];
   return (
-    <Frame viewBox="0 0 640 210">
+    <Frame viewBox="0 0 700 210">
       <rect x="16" y="70" width="118" height="58" rx="10" fill={S.box} stroke={S.wire} />
       <text x="32" y="92" fontSize="11" fill={S.label}>treasury</text>
       <text x="32" y="112" fontSize="12" fill="#fff">26 STRK</text>
       <line x1="140" y1="99" x2="212" y2="99" stroke={S.wire} strokeWidth="1.5" />
       <path d="M212 99 l-8 -4 v8 z" fill={S.wire} />
+      <circle
+        cx="144"
+        cy="99"
+        r="2.6"
+        fill="#fff"
+        className="anim-travel"
+        style={{ ["--travel" as string]: "64px" }}
+      />
       <text x="146" y="90" fontSize="9" fill={S.faint}>public</text>
 
-      <rect x="220" y="28" width="200" height="150" rx="14" stroke={S.wireDim} strokeDasharray="5 4" fill="none" />
+      <rect x="220" y="28" width="200" height="150" rx="14" stroke={S.wireDim} strokeDasharray="5 4" fill="none" className="anim-breathe" />
       <text x="236" y="48" fontSize="10" fill={S.faint}>STRK20 pool - unreadable</text>
-      <rect x="238" y="82" width="66" height="34" rx="8" fill={S.box} stroke={S.wireDim} />
+      <rect x="238" y="82" width="66" height="34" rx="8" fill={S.box} stroke={S.wireDim} className="anim-breathe" />
       <text x="254" y="104" fontSize="12" fill={S.faint}>••••</text>
       {ys.map((y) => (
         <g key={y}>
-          <path d={`M306 99 C 336 99, 340 ${y + 12}, 366 ${y + 12}`} stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
+          <path
+            d={`M306 99 C 336 99, 340 ${y + 12}, 366 ${y + 12}`}
+            stroke={S.wireDim}
+            strokeDasharray="4 3"
+            fill="none"
+            className="anim-dash"
+          />
           <rect x="368" y={y} width="44" height="24" rx="6" fill={S.box} stroke={S.wireDim} />
           <text x="380" y={y + 16} fontSize="10" fill={S.faint}>••••</text>
         </g>
@@ -132,6 +149,14 @@ export function FlowDiagram() {
         <g key={`out-${y}`}>
           <line x1="424" y1={y + 12} x2="486" y2={y + 12} stroke={S.wire} strokeWidth="1.2" />
           <path d={`M486 ${y + 12} l-7 -3.5 v7 z`} fill={S.wire} />
+          <circle
+            cx="428"
+            cy={y + 12}
+            r="2.2"
+            fill="#fff"
+            className="anim-travel"
+            style={{ ["--travel" as string]: "54px", animationDelay: `${i * 0.55}s` }}
+          />
           <rect x="492" y={y} width="132" height="24" rx="6" fill={S.box} stroke={S.wire} />
           <text x="504" y={y + 16} fontSize="10" fill={S.faint}>
             0x•••• · {["4", "9", "7"][i]} STRK
@@ -151,7 +176,7 @@ export function ModuleGlyph({ kind }: { kind: "split" | "bounty" | "grant" }) {
         <circle cx="34" cy="45" r="11" fill={S.box} stroke={S.wire} />
         {[20, 45, 70].map((y) => (
           <g key={y}>
-            <path d={`M46 45 C 80 45, 90 ${y}, 122 ${y}`} stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
+            <path d={`M46 45 C 80 45, 90 ${y}, 122 ${y}`} stroke={S.wireDim} strokeDasharray="4 3" fill="none" className="anim-dash" />
             <rect x="126" y={y - 9} width="52" height="18" rx="5" fill={S.box} stroke={S.wireDim} />
             <text x="140" y={y + 4} fontSize="9" fill={S.faint} fontFamily="ui-monospace, monospace">••••</text>
           </g>
@@ -164,7 +189,7 @@ export function ModuleGlyph({ kind }: { kind: "split" | "bounty" | "grant" }) {
       <Frame viewBox="0 0 200 90">
         <rect x="14" y="32" width="56" height="26" rx="7" fill={S.box} stroke={S.wire} />
         <text x="24" y="49" fontSize="9" fill={S.faint} fontFamily="ui-monospace, monospace">program</text>
-        <path d="M74 45 C 100 45, 106 45, 124 45" stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
+        <path d="M74 45 C 100 45, 106 45, 124 45" stroke={S.wireDim} strokeDasharray="4 3" fill="none" className="anim-dash" />
         <path d="M150 22 l16 6v12c0 9-6.5 16.5-16 20-9.5-3.5-16-11-16-20V28z" fill="none" stroke={S.wire} strokeLinejoin="round" />
         <circle cx="150" cy="45" r="5" fill={S.wire} />
       </Frame>
@@ -185,8 +210,8 @@ export function ModuleGlyph({ kind }: { kind: "split" | "bounty" | "grant" }) {
           <text x={x + 12} y={y + 15} fontSize="9" fill={S.faint} fontFamily="ui-monospace, monospace">••••</text>
         </g>
       ))}
-      <path d="M62 45 C 76 45, 80 29, 94 29" stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
-      <path d="M62 45 C 76 45, 80 61, 94 61" stroke={S.wireDim} strokeDasharray="4 3" fill="none" />
+      <path d="M62 45 C 76 45, 80 29, 94 29" stroke={S.wireDim} strokeDasharray="4 3" fill="none" className="anim-dash" />
+      <path d="M62 45 C 76 45, 80 61, 94 61" stroke={S.wireDim} strokeDasharray="4 3" fill="none" className="anim-dash" />
     </Frame>
   );
 }
