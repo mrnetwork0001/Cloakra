@@ -10,6 +10,7 @@ import {
 } from "@/components/Diagrams";
 import WindowFrame from "@/components/WindowFrame";
 import MossVignette from "@/components/MossVignette";
+import SiteFooter from "@/components/SiteFooter";
 
 const MODULES = [
   {
@@ -31,7 +32,7 @@ const MODULES = [
     tag: "Grant rounds",
     glyph: "grant" as const,
     blurb:
-      "A whole grant round disbursed in one atomic transaction. Each grantee sees only their own award - the recipient list and per-grant amounts never appear on-chain. Only the org's total deposit is public.",
+      "A whole grant round disbursed in one atomic transaction. Each grantee sees only their own award - the recipient list and per-grant amounts never appear onchain. Only the org's total deposit is public.",
   },
 ] as const;
 
@@ -46,7 +47,7 @@ const PROBLEMS = [
   },
   {
     title: "A grant round exposes every recipient",
-    text: "Funding projects on-chain broadcasts your entire allocation strategy - who, how much, and when - to competitors and attackers alike.",
+    text: "Funding projects onchain broadcasts your entire allocation strategy - who, how much, and when - to competitors and attackers alike.",
   },
 ] as const;
 
@@ -88,7 +89,7 @@ const PROPERTIES = [
 ] as const;
 
 const AUDIENCES = [
-  { title: "DAOs & protocol treasuries", text: "Pay contributors without publishing the whole compensation table on-chain." },
+  { title: "DAOs & protocol treasuries", text: "Pay contributors without publishing the whole compensation table onchain." },
   { title: "Bug bounty programs", text: "Reward researchers without linking their wallet to the disclosure." },
   { title: "Grant programs", text: "Fund a full round in one transaction without exposing the grantee list." },
   { title: "Open-source maintainers", text: "Split sponsorship among maintainers without ranking them publicly." },
@@ -222,7 +223,7 @@ export default function Home() {
             Cloakra settles organizational payouts inside the STRK20 privacy
             pool, so a bounty never doxxes the researcher and a team split never
             publishes the salary table - while every claim it makes stays
-            checkable on-chain.
+            checkable onchain.
           </p>
         </section>
 
@@ -356,7 +357,7 @@ export default function Home() {
               <thead>
                 <tr className="border-b border-white/10 bg-white/[0.02] text-white/40">
                   <th className="px-5 py-3 font-medium">Private (inside the pool)</th>
-                  <th className="px-5 py-3 font-medium">Public (on-chain)</th>
+                  <th className="px-5 py-3 font-medium">Public (onchain)</th>
                 </tr>
               </thead>
               <tbody className="text-white/60">
@@ -432,30 +433,7 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="relative border-t border-white/10 px-6 py-10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-baseline justify-center gap-x-6 gap-y-2 text-sm text-white/30">
-            <span className="flex items-center gap-2">
-              <ShieldMark className="size-4 text-white/30" />
-              Cloakra · Apache 2.0 · Built for the STRK20 Private Sprint
-            </span>
-            <a
-              className="text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
-              href="https://github.com/mrnetwork0001/Cloakra"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            <a
-              className="text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
-              href="https://voyager.online/contract/0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812a"
-              target="_blank"
-              rel="noreferrer"
-            >
-              STRK20 pool
-            </a>
-          </div>
-        </footer>
+        <SiteFooter />
       </main>
     </>
   );
