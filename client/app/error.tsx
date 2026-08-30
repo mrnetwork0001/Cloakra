@@ -3,7 +3,7 @@
 /**
  * App-level error boundary. A component crash must never white-screen the
  * app - especially not with a wallet connected and funds in the pool. No
- * on-chain state can be harmed by a UI crash; say so, plainly.
+ * onchain state can be harmed by a UI crash; say so, plainly.
  */
 export default function Error({
   error,
@@ -16,7 +16,7 @@ export default function Error({
     <main className="mx-auto max-w-xl px-6 py-24">
       <h1 className="text-2xl font-semibold text-white">Something broke in the UI</h1>
       <p className="mt-3 text-sm leading-relaxed text-white/60">
-        This was a display error - nothing on-chain was affected by it. Your
+        This was a display error - nothing onchain was affected by it. Your
         shielded balance and any submitted transactions are untouched; anything
         in flight can be checked on Voyager via its transaction hash.
       </p>

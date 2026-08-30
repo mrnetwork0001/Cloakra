@@ -2,7 +2,7 @@
 
 **Shielded capital allocation on Starknet Mainnet, powered by the STRK20 Privacy Pool.**
 
-Grants, bug bounties, and contributor payouts are the most identity-revealing transactions an organization makes. Paying a security researcher publicly links their wallet to the disclosure. Splitting a team grant on-chain shows every contributor what everyone else was paid. Cloakra settles those flows inside the STRK20 pool - who receives and how much stays private; the pool's public legs stay public.
+Grants, bug bounties, and contributor payouts are the most identity-revealing transactions an organization makes. Paying a security researcher publicly links their wallet to the disclosure. Splitting a team grant onchain shows every contributor what everyone else was paid. Cloakra settles those flows inside the STRK20 pool - who receives and how much stays private; the pool's public legs stay public.
 
 Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 
@@ -19,7 +19,7 @@ Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
 | :--- | :--- |
 | **StealthSplit** | One funded note split atomically into per-contributor shielded balances. Co-workers cannot read each other's allocation. |
 | **GhostBounty** | Bounty payouts to a researcher's shielded balance, so disclosing a vulnerability does not deanonymize the wallet that receives payment. |
-| **StealthGrant** | A whole grant round in one atomic transaction. Each grantee sees only their own award - the recipient list and per-grant amounts never appear on-chain; only the org's total deposit is public. |
+| **StealthGrant** | A whole grant round in one atomic transaction. Each grantee sees only their own award - the recipient list and per-grant amounts never appear onchain; only the org's total deposit is public. |
 
 ## What's private, what isn't
 

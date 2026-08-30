@@ -77,7 +77,7 @@ export default function VerifyPage() {
         org&apos;s <strong className="text-white/70">signed attestation</strong>{" "}
         of who was paid what in which pool transaction. Verification proves the
         attestation - the commitment math, the org account&apos;s signature
-        (checked on-chain), and that the referenced transaction settled and
+        (checked onchain), and that the referenced transaction settled and
         touched the STRK20 pool. What it cannot prove is the shielded
         transfer&apos;s contents: the pool keeps those private by design, so a
         receipt is exactly as trustworthy as its signer.
@@ -134,7 +134,7 @@ export default function VerifyPage() {
               label={
                 state.result.signature === null
                   ? "Org signature - could not reach the chain to check"
-                  : "Org account signed this run (checked on-chain)"
+                  : "Org account signed this run (checked onchain)"
               }
             />
             <Row

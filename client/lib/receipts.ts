@@ -13,7 +13,7 @@
  * shielded transaction contains - the pool keeps tx contents private by
  * design, so no receipt scheme can chain-verify the transfer itself.
  * Verification is public: rebuild the leaf, walk the proof to the root,
- * check the signature against the org account on-chain (SNIP-6
+ * check the signature against the org account onchain (SNIP-6
  * is_valid_signature via verifyMessageInStarknet), and confirm the referenced
  * tx settled AND touched the pool. No keys, no wallet, no trust in Cloakra -
  * but the receipt is exactly as trustworthy as its signer.

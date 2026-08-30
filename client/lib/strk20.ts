@@ -271,7 +271,7 @@ export function buildWithdraw(
 export type SubmitOutcome =
   /** Accepted AND execution SUCCEEDED - the only true success. */
   | { kind: "confirmed"; txHash: string }
-  /** Accepted on-chain but execution REVERTED - no value moved. */
+  /** Accepted onchain but execution REVERTED - no value moved. */
   | { kind: "reverted"; txHash: string }
   /** waitForTransaction diagnosed a dead tx (mempool eviction etc.). */
   | { kind: "failed"; txHash: string; message: string }

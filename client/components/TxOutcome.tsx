@@ -64,7 +64,7 @@ export default function TxOutcome({
     return (
       <section className="rounded-xl border border-red-400/25 bg-red-400/[0.05] p-6">
         <h2 className="text-sm font-medium tracking-wide text-red-200/70 uppercase">
-          {operation} - reverted on-chain
+          {operation} - reverted onchain
         </h2>
         <p className="mt-3 text-sm text-white/70">{revertedBody}</p>
         <p className="mt-2">{voyager}</p>

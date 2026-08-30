@@ -93,7 +93,7 @@ export default function WithdrawPanel({
         outcome={phase.outcome}
         operation="Unshield"
         confirmedTitle="Unshielded"
-        confirmedBody="Withdrawal confirmed - execution succeeded. This leg is public: the recipient address and amount are visible on-chain. No on-chain record names the source balance - though timing and amount correlation with public deposits is always possible."
+        confirmedBody="Withdrawal confirmed - execution succeeded. This leg is public: the recipient address and amount are visible onchain. No onchain record names the source balance - though timing and amount correlation with public deposits is always possible."
         revertedBody="The withdrawal was included but reverted - nothing left the pool. Possible causes: immature notes (~10 blocks), insufficient shielded balance at execution, or a fee change."
         onBack={onBack}
       />
@@ -110,7 +110,7 @@ export default function WithdrawPanel({
       <p className="mt-2 text-sm text-white/50">
         Withdraws shielded STRK back to a public address.{" "}
         <strong className="text-white/70">This leg is public</strong> - the
-        recipient and amount appear on-chain. No on-chain record names the
+        recipient and amount appear onchain. No onchain record names the
         depositing org, but timing and amounts are public too: unshielding a
         matching amount right after a shield is trivially correlatable.
       </p>

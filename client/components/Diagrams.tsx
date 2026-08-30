@@ -1,7 +1,7 @@
 /**
  * Section diagrams. Each one shows the actual mechanism of the section it
  * sits in, using one consistent visual grammar:
- *   solid stroke + readable text = public on-chain
+ *   solid stroke + readable text = public onchain
  *   dashed stroke + masked dots  = inside the pool, unreadable
  * They are diagrams, not screenshots, and carry no real balances.
  */
@@ -99,7 +99,7 @@ export function UnshieldDiagram() {
       <path d="M300 128 C 240 158, 120 158, 70 132" stroke={S.wireDim} strokeDasharray="3 5" fill="none" />
       <line x1="176" y1="140" x2="196" y2="152" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
       <line x1="196" y1="140" x2="176" y2="152" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-      <text x="206" y="152" fontSize="10" fill={S.faint}>no on-chain link back</text>
+      <text x="206" y="152" fontSize="10" fill={S.faint}>no onchain link back</text>
     </Frame>
   );
 }
