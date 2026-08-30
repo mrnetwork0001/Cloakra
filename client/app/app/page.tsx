@@ -14,7 +14,7 @@ export default function AppPage() {
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-white/10 bg-black/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        <nav className="mx-auto flex max-w-[1536px] items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2 text-white">
             <svg viewBox="0 0 32 32" className="size-6 text-white" aria-hidden>
               <path
@@ -37,7 +37,7 @@ export default function AppPage() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
+      <main className="mx-auto max-w-[1536px] px-6 py-10">
         <p className="mb-8 text-sm text-white/50">
           Connect a privacy-enabled wallet (Ready) on Starknet mainnet.
           Everything here signs through your wallet - Cloakra holds no keys and
@@ -55,7 +55,7 @@ export default function AppPage() {
 
       </main>
 
-      <SiteFooter />
+      <SiteFooter wide />
     </>
   );
 }
