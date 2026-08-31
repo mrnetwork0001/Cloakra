@@ -125,21 +125,6 @@ const FAQ = [
   },
 ] as const;
 
-function ShieldMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <path
-        d="M16 5l9 3.5v7c0 5.5-3.8 9.6-9 11.5-5.2-1.9-9-6-9-11.5v-7L16 5z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <circle cx="16" cy="15.5" r="3.2" fill="currentColor" />
-    </svg>
-  );
-}
-
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-center text-[11px] font-medium tracking-[0.25em] text-white/30 uppercase">
@@ -421,9 +406,13 @@ export default function Home() {
         <section className="relative overflow-hidden px-6 pt-24 pb-28">
           <MossVignette position="bottom" />
           <div className="relative mx-auto max-w-2xl text-center">
-            <div className="mx-auto mb-10 size-24">
-              <ShieldMark className="size-24 text-white/70" />
-            </div>
+            <Image
+              src="/cloakra-header.png"
+              alt="Cloakra"
+              width={1923}
+              height={818}
+              className="mx-auto mb-10 h-24 w-auto"
+            />
             <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Pay privately. Prove it honestly.
             </h2>
