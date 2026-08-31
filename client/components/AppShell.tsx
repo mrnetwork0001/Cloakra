@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import type { WalletAccountV6 } from "starknet";
@@ -50,18 +51,15 @@ export default function AppShell() {
     <>
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-10">
-          <Link href="/" className="flex items-center gap-2 text-white">
-            <svg viewBox="0 0 32 32" className="size-5 text-white" aria-hidden>
-              <path
-                d="M16 5l9 3.5v7c0 5.5-3.8 9.6-9 11.5-5.2-1.9-9-6-9-11.5v-7L16 5z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <circle cx="16" cy="15.5" r="3.2" fill="currentColor" />
-            </svg>
-            <span className="text-sm font-semibold tracking-tight">Cloakra</span>
+          <Link href="/" className="flex items-center" aria-label="Cloakra home">
+            <Image
+              src="/cloakra-header.png"
+              alt="Cloakra"
+              width={1923}
+              height={818}
+              priority
+              className="h-8 w-auto"
+            />
           </Link>
           <WalletPanel onSession={setSession} />
         </nav>

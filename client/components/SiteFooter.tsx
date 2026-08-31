@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const POOL =
@@ -55,10 +56,13 @@ export default function SiteFooter() {
     <footer className="relative overflow-hidden border-t border-white/10">
       <div className="relative mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-10">
         <div>
-          <div className="flex items-center gap-3">
-            <ShieldMark className="size-8 text-white" />
-            <span className="text-lg font-semibold tracking-tight text-white">Cloakra</span>
-          </div>
+          <Image
+            src="/cloakra-header.png"
+            alt="Cloakra"
+            width={1923}
+            height={818}
+            className="h-10 w-auto"
+          />
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/45">
             Shielded capital allocation on Starknet. Grants, bug bounties, and
             contributor payouts settle through the STRK20 privacy pool - who

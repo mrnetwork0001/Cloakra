@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import ProofPanel from "@/components/ProofPanel";
 import LiveFee from "@/components/LiveFee";
@@ -152,9 +153,15 @@ export default function Home() {
     <>
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-10">
-          <a href="#" className="flex items-center gap-2 text-white">
-            <ShieldMark className="size-5 text-white" />
-            <span className="text-sm font-semibold tracking-tight">Cloakra</span>
+          <a href="#" className="flex items-center" aria-label="Cloakra">
+            <Image
+              src="/cloakra-header.png"
+              alt="Cloakra"
+              width={1923}
+              height={818}
+              priority
+              className="h-8 w-auto"
+            />
           </a>
           <div className="hidden items-center gap-7 text-sm text-white/50 md:flex">
             <a className="transition hover:text-white" href="#how">How it works</a>
