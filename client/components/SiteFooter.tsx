@@ -61,7 +61,7 @@ export default function SiteFooter() {
             alt="Cloakra"
             width={1923}
             height={818}
-            className="h-10 w-auto"
+            className="h-20 w-auto"
           />
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/45">
             Shielded capital allocation on Starknet. Grants, bug bounties, and

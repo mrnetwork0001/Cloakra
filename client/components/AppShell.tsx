@@ -50,7 +50,7 @@ export default function AppShell() {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-10">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2 md:px-10">
           <Link href="/" className="flex items-center" aria-label="Cloakra home">
             <Image
               src="/cloakra-header.png"
@@ -58,7 +58,7 @@ export default function AppShell() {
               width={1923}
               height={818}
               priority
-              className="h-8 w-auto"
+              className="h-16 w-auto"
             />
           </Link>
           <WalletPanel onSession={setSession} />
