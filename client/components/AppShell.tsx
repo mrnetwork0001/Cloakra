@@ -18,12 +18,59 @@ import SplitPanel from "./SplitPanel";
 import WithdrawPanel from "./WithdrawPanel";
 import ActivityPanel from "./ActivityPanel";
 import ShieldedBalance from "./ShieldedBalance";
+import StatStrip from "./StatStrip";
 import Orientation from "./Orientation";
 
 export type { WalletSession };
 
 const TABS = ["StealthSplit", "GhostBounty", "StealthGrant", "Treasury"] as const;
 type Tab = (typeof TABS)[number];
+
+const SECTIONS: Record<Tab, { title: string; blurb: string; icon: React.ReactNode }> = {
+  StealthSplit: {
+    title: "StealthSplit",
+    blurb:
+      "Pay a whole team from one shielded balance in a single atomic transaction. All transfers land or none do.",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+        <path d="M4 12h5M13 6l6 0M13 12h6M13 18h6" />
+        <circle cx="6" cy="12" r="1.8" />
+      </svg>
+    ),
+  },
+  GhostBounty: {
+    title: "GhostBounty",
+    blurb:
+      "A single private payout to a security researcher - the transaction names no recipient and no amount.",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden>
+        <path d="M12 3.5l7 2.7v5.2c0 4.2-2.9 7.3-7 8.8-4.1-1.5-7-4.6-7-8.8V6.2z" />
+      </svg>
+    ),
+  },
+  StealthGrant: {
+    title: "StealthGrant",
+    blurb:
+      "Disburse a whole grant round at once. Each grantee sees only their own award; the list never appears onchain.",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+        <rect x="4" y="8" width="16" height="12" rx="2" />
+        <path d="M4 12h16M12 8v12" />
+      </svg>
+    ),
+  },
+  Treasury: {
+    title: "Treasury",
+    blurb:
+      "Shield STRK into the pool, unshield back out, and review every pool leg the chain can see about this account.",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+        <path d="M4 9l8-4 8 4v2H4z" />
+        <path d="M6 11v7M12 11v7M18 11v7M4 20h16" />
+      </svg>
+    ),
+  },
+};
 
 export default function AppShell() {
   const [session, setSession] = useState<{
@@ -112,34 +159,50 @@ export default function AppShell() {
 
       {session && session.strk20 ? (
         <div key={session.address} className="space-y-6">
-          <nav
-            role="tablist"
-            aria-label="Cloakra modules"
-            className="flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02] p-1"
-          >
-            {TABS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                disabled={busy && tab !== t}
-                title={
-                  busy && tab !== t
-                    ? "A submission is in flight - navigation unlocks when it settles."
-                    : undefined
-                }
-                className={`shrink-0 rounded-lg px-4 py-2 text-sm transition disabled:opacity-40 ${
-                  tab === t
-                    ? "bg-white/10 font-medium text-white"
-                    : "text-white/50 hover:bg-white/[0.04] hover:text-white/80"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </nav>
+          <div className="grid gap-6 lg:grid-cols-[210px_1fr]">
+            <nav
+              role="tablist"
+              aria-label="Cloakra modules"
+              className="flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-neutral-950 p-2 lg:h-fit lg:flex-col lg:overflow-visible"
+            >
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t}
+                  onClick={() => setTab(t)}
+                  disabled={busy && tab !== t}
+                  title={
+                    busy && tab !== t
+                      ? "A submission is in flight - navigation unlocks when it settles."
+                      : undefined
+                  }
+                  className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition disabled:opacity-40 ${
+                    tab === t
+                      ? "bg-white/10 font-medium text-white"
+                      : "text-white/50 hover:bg-white/[0.04] hover:text-white/80"
+                  }`}
+                >
+                  <span className={tab === t ? "text-white" : "text-white/40"}>
+                    {SECTIONS[t].icon}
+                  </span>
+                  {t}
+                </button>
+              ))}
+            </nav>
+
+            <div className="min-w-0 space-y-6">
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-white">
+                  {SECTIONS[tab].title}
+                </h1>
+                <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/50">
+                  {SECTIONS[tab].blurb}
+                </p>
+              </div>
+
+              <StatStrip address={session.address} wrongChain={session.wrongChain} />
 
           {tab === "StealthSplit" ? (
             <SplitPanel
@@ -222,6 +285,8 @@ export default function AppShell() {
               <ActivityPanel address={session.address} />
             </>
           ) : null}
+            </div>
+          </div>
         </div>
       ) : null}
       </div>
