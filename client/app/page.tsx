@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import MobileNav from "@/components/MobileNav";
 import ProofPanel from "@/components/ProofPanel";
 import LiveFee from "@/components/LiveFee";
 import {
@@ -145,7 +146,7 @@ export default function Home() {
               width={1923}
               height={818}
               priority
-              className="h-16 w-auto"
+              className="h-11 w-auto sm:h-16"
             />
           </a>
           <div className="hidden items-center gap-7 text-sm text-white/50 md:flex">
@@ -154,6 +155,7 @@ export default function Home() {
             <a className="transition hover:text-white" href="#proof">Proof</a>
             <Link className="transition hover:text-white" href="/docs">Docs</Link>
           </div>
+          <MobileNav />
         </nav>
       </header>
 
