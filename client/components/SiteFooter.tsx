@@ -28,6 +28,7 @@ const COLUMNS = [
   {
     heading: "Resources",
     links: [
+      { label: "Docs", href: "/docs" },
       { label: "GitHub", href: REPO, external: true },
       { label: "Evaluate in 5 min", href: `${REPO}/blob/main/EVALUATE.md`, external: true },
       { label: "Architecture", href: `${REPO}/blob/main/ARCHITECTURE.md`, external: true },

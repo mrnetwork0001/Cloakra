@@ -108,7 +108,15 @@ export default function AppShell() {
               className="h-16 w-auto"
             />
           </Link>
-          <WalletPanel onSession={setSession} />
+          <div className="flex items-center gap-5">
+            <Link
+              href="/docs"
+              className="font-mono text-xs tracking-[0.15em] text-white/45 uppercase transition hover:text-white"
+            >
+              Docs
+            </Link>
+            <WalletPanel onSession={setSession} />
+          </div>
         </nav>
       </header>
 

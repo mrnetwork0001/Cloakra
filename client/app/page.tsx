@@ -152,7 +152,7 @@ export default function Home() {
             <a className="transition hover:text-white" href="#how">How it works</a>
             <a className="transition hover:text-white" href="#modules">Modules</a>
             <a className="transition hover:text-white" href="#proof">Proof</a>
-            <a className="transition hover:text-white" href="#faq">FAQ</a>
+            <Link className="transition hover:text-white" href="/docs">Docs</Link>
           </div>
         </nav>
       </header>
