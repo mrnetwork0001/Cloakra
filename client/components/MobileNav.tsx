@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 const LINKS = [
   { label: "How it works", href: "#how" },
   { label: "Modules", href: "#modules" },
   { label: "Proof", href: "#proof" },
-  { label: "FAQ", href: "#faq" },
 ] as const;
 
 /**
@@ -17,18 +16,30 @@ const LINKS = [
  */
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Escape, and any pointer landing outside the menu, close it. A fixed
+  // overlay cannot be used here: the header sets backdrop-filter, which makes
+  // it the containing block for fixed descendants, so the layer would never
+  // cover the page.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div ref={wrapRef} className="md:hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -50,16 +61,7 @@ export default function MobileNav() {
       </button>
 
       {open ? (
-        <>
-          {/* tap-away layer, below the panel but above the page */}
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => setOpen(false)}
-            className="fixed inset-x-0 top-[var(--header-h,72px)] bottom-0 z-30 cursor-default bg-black/60"
-          />
-          <div className="absolute inset-x-0 top-full z-40 border-b border-white/10 bg-black/95 backdrop-blur">
+        <div className="absolute inset-x-0 top-full z-40 border-b border-white/10 bg-black/95 backdrop-blur">
             <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-4">
               {LINKS.map((l) => (
                 <a
@@ -78,16 +80,8 @@ export default function MobileNav() {
               >
                 Docs
               </Link>
-              <Link
-                href="/app"
-                onClick={() => setOpen(false)}
-                className="mt-2 rounded-full bg-white px-5 py-3 text-center text-base font-medium text-black transition hover:bg-white/90"
-              >
-                Open the app
-              </Link>
             </nav>
-          </div>
-        </>
+        </div>
       ) : null}
     </div>
   );
