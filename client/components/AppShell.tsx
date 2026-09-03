@@ -105,13 +105,13 @@ export default function AppShell() {
               width={1923}
               height={818}
               priority
-              className="h-16 w-auto"
+              className="h-11 w-auto sm:h-16"
             />
           </Link>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4 sm:gap-5">
             <Link
               href="/docs"
-              className="font-mono text-xs tracking-[0.15em] text-white/45 uppercase transition hover:text-white"
+              className="hidden font-mono text-xs tracking-[0.15em] text-white/45 uppercase transition hover:text-white sm:block"
             >
               Docs
             </Link>
