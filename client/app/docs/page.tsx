@@ -91,6 +91,32 @@ function Callout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function NavList() {
+  return (
+    <nav className="space-y-6">
+      {NAV.map((section) => (
+        <div key={section.group}>
+          <p className="font-mono text-[11px] tracking-[0.2em] text-white/30 uppercase">
+            {section.group}
+          </p>
+          <ul className="mt-3 space-y-2 border-l border-white/10">
+            {section.items.map((item) => (
+              <li key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  className="-ml-px block border-l border-transparent pl-4 text-sm text-white/50 transition hover:border-white/40 hover:text-white"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
 export default function DocsPage() {
   return (
     <>
@@ -115,29 +141,31 @@ export default function DocsPage() {
       </header>
 
       <main className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:px-10 lg:grid-cols-[220px_1fr]">
-        {/* Sidebar */}
-        <aside className="lg:sticky lg:top-24 lg:h-fit">
-          <nav className="space-y-6">
-            {NAV.map((section) => (
-              <div key={section.group}>
-                <p className="font-mono text-[11px] tracking-[0.2em] text-white/30 uppercase">
-                  {section.group}
-                </p>
-                <ul className="mt-3 space-y-2 border-l border-white/10">
-                  {section.items.map((item) => (
-                    <li key={item.id}>
-                      <a
-                        href={`#${item.id}`}
-                        className="-ml-px block border-l border-transparent pl-4 text-sm text-white/50 transition hover:border-white/40 hover:text-white"
-                      >
-                        {item.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </nav>
+        {/* Contents: a closed disclosure on small screens so the docs start
+            with documentation, a persistent sidebar from lg up. */}
+        <details className="group rounded-xl border border-white/10 bg-neutral-950 lg:hidden">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-white/70 transition group-open:text-white [&::-webkit-details-marker]:hidden">
+            On this page
+            <svg
+              viewBox="0 0 20 20"
+              className="float-right size-4 text-white/35 transition group-open:rotate-180"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M5 8l5 5 5-5" />
+            </svg>
+          </summary>
+          <div className="border-t border-white/10 px-4 py-4">
+            <NavList />
+          </div>
+        </details>
+
+        <aside className="hidden lg:sticky lg:top-24 lg:block lg:h-fit">
+          <NavList />
         </aside>
 
         {/* Content */}
