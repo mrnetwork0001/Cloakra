@@ -4,7 +4,7 @@
 
 Grants, bug bounties, and contributor payouts are the most identity-revealing transactions an organization makes. Paying a security researcher publicly links their wallet to the disclosure. Splitting a team grant onchain shows every contributor what everyone else was paid. Cloakra settles those flows inside the STRK20 pool - who receives and how much stays private; the pool's public legs stay public.
 
-Built for the **STRK20 Private Sprint** (Aug 14 – Aug 31, 2026).
+Built for the **STRK20 Private Sprint** (Aug 14 – Sep 7, 2026, extended a week by the organizers).
 
 > **Reviewing this project?** [EVALUATE.md](EVALUATE.md) is a five-minute
 > path through it - what to check, in what order, and how to verify every
@@ -33,7 +33,7 @@ The privacy is the broken *link* between the org's deposit and a recipient's wit
 
 ## Status
 
-**Live on Starknet mainnet.** The treasury lifecycle - shield → shielded balance → unshield - has been executed through this UI against the canonical pool, and **three verified mainnet transaction hashes are recorded in [`strk20.json`](strk20.json)** (each gated on `ACCEPTED` + `SUCCEEDED` **and having emitted STRK20 pool events** via [`scripts/verify-tx.mjs`](scripts/verify-tx.mjs); [`scripts/preflight.mjs`](scripts/preflight.mjs) re-runs that sweep across the whole manifest). The module flows - private transfer and the atomic split - ride the same wallet API against the same pool but have not yet been exercised by a recorded hash. Also ships: a consent-gated shielded-balance read and a public-footprint view built from the pool's `Deposit`/`Withdrawal` events. Integration plan: [STRK20_INTEGRATION_PLAN.md](STRK20_INTEGRATION_PLAN.md).
+**Live on Starknet mainnet.** The treasury lifecycle - shield → shielded balance → unshield - has been executed through this UI against the canonical pool, and **three verified mainnet transaction hashes are recorded in [`strk20.json`](strk20.json)** (each gated on `ACCEPTED` + `SUCCEEDED` **and having emitted STRK20 pool events** via [`scripts/verify-tx.mjs`](scripts/verify-tx.mjs); [`scripts/preflight.mjs`](scripts/preflight.mjs) re-runs that sweep across the whole manifest). The module flows - private transfer and the atomic split - ride the same wallet API against the same pool but have not yet been exercised by a recorded hash. Also ships: a consent-gated shielded-balance read and a public-footprint view built from the pool's `Deposit`/`Withdrawal` events. The app is organized as a dashboard - StealthSplit / GhostBounty / StealthGrant / Treasury in a sidebar, with live public metrics (STRK balance, the pool fee read from the contract, network) above the working area - and ships its own documentation site at `/docs`: the modules, the privacy model, fees and registration, and the known limits, stated plainly. Integration plan: [STRK20_INTEGRATION_PLAN.md](STRK20_INTEGRATION_PLAN.md).
 
 Cloakra integrates the pool through **`WalletAccountV6`** in starknet.js, which exposes the STRK20 privacy actions (`strk20Balances`, `strk20PrepareInvoke`, `strk20InvokeTransaction`) directly. Because `strk20InvokeTransaction` accepts an *array* of actions settled in one transaction, StealthSplit's atomic one-note-to-many-recipients payout needs no custom Cairo contract. Every operation is signed by the user's own wallet; no key material is ever held server-side.
 
