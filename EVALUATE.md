@@ -27,18 +27,20 @@ Or run the repo's own gate (public RPC fallback included):
 
 You need the [Ready](https://www.ready.co) wallet on Starknet mainnet. Then:
 
-1. **Open the app** → connect. Capability detection is a version query - the
-   app never reads wallet data to feature-detect.
-2. **Shield tab**: the pool fee is read live from the contract (it changed
-   mid-sprint from 4 to 6 STRK - nothing here hardcodes it).
-3. **StealthSplit**: add recipients or paste a CSV payroll - every row passes
+1. **Open the app** → connect from the header. Capability detection is a
+   version query - the app never reads wallet data to feature-detect. You
+   land on a sidebar dashboard whose metrics are public reads only: STRK
+   balance, the pool fee live from the contract (it changed mid-sprint from
+   4 to 6 STRK - nothing here hardcodes it), and network.
+2. **StealthSplit**: add recipients or paste a CSV payroll - every row passes
    the same validation as typed input. One confirm settles all transfers in
    one atomic transaction.
-4. **Treasury → Public footprint**: everything the chain shows about your
+3. **Treasury → Public footprint**: everything the chain shows about your
    account's pool use - and notably, what is *absent* from it.
 
 Without a wallet, the landing page's proof section and live-fee line still
-demonstrate the mainnet integration.
+demonstrate the mainnet integration, and the in-app documentation site at
+`/docs` states the privacy model, fees, registration, and known limits.
 
 ## 3. The honesty claim (90 seconds)
 
