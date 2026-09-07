@@ -18,6 +18,7 @@ describe("parseFootprintEvent", () => {
     });
     expect(e).toEqual({
       kind: "deposit",
+      account: USER,
       token: TOKEN,
       amount: 26n,
       txHash: TX,
@@ -50,6 +51,28 @@ describe("parseFootprintEvent", () => {
       parseFootprintEvent({
         keys: [WITHDRAWAL, USER, TOKEN],
         data: ["0x1", "0x2", "0x3"],
+        transaction_hash: TX,
+      }),
+    ).toBeNull();
+  });
+
+  it("normalizes the account key so padded spellings compare equal", () => {
+    const e = parseFootprintEvent({
+      keys: [WITHDRAWAL, "0x000" + USER.slice(2), TOKEN],
+      data: ["0x1", "0x2", "0x3", "0x9"],
+      transaction_hash: TX,
+    });
+    expect(e?.account).toBe(USER);
+  });
+
+  it("returns null when the key layout is short or unreadable", () => {
+    expect(
+      parseFootprintEvent({ keys: [DEPOSIT, USER], data: ["0x1"], transaction_hash: TX }),
+    ).toBeNull();
+    expect(
+      parseFootprintEvent({
+        keys: [DEPOSIT, "not-a-felt", TOKEN],
+        data: ["0x1"],
         transaction_hash: TX,
       }),
     ).toBeNull();

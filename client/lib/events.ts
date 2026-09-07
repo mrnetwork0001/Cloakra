@@ -1,7 +1,7 @@
 /**
- * The account's PUBLIC pool footprint, read from the pool's events over our
- * own RPC. This is exactly - and only - what any block explorer can see:
- * the ERC-20 legs. Private transfers and splits emit nothing linkable here.
+ * The pool's PUBLIC event footprint, read over our own RPC. This is exactly -
+ * and only - what any block explorer can see: the ERC-20 legs. Private
+ * transfers and splits emit nothing linkable here.
  *
  * Event layouts verified against the deployed pool ABI (2026-08-19):
  *   Deposit    keys=[selector, user_addr, token]  data=[amount]           (1 felt)
@@ -15,6 +15,10 @@
  * BACKWARD in sub-ranges from the latest block down to the pool's deployment
  * era. Newest entries are always complete; running out of budget drops only
  * the oldest, which is what the UI says.
+ *
+ * Two readers share one scanner: the per-account footprint (keyed on the
+ * account) and the pool-wide activity feed (no account key), which the
+ * recipient-side privacy check and the dashboard use.
  */
 
 import { hash } from "starknet";
@@ -31,14 +35,36 @@ const SUB_RANGE_BLOCKS = 500_000;
 const MAX_RPC_CALLS = 30;
 const CHUNK_SIZE = 1000;
 
+/** Pool-wide reads are bounded harder: they are a privacy aid and a
+ * dashboard figure, not an audit trail. ~19 hours at the measured 1.7s
+ * block time. */
+export const ACTIVITY_LOOKBACK_BLOCKS = 40_000;
+const ACTIVITY_MAX_RPC_CALLS = 8;
+const ACTIVITY_CACHE_MS = 30_000;
+
 export interface FootprintEntry {
   kind: "deposit" | "withdrawal";
+  /** keys[1], normalized: the depositor on Deposit, the public recipient on
+   * Withdrawal. The only account the chain names for the leg. */
+  account: string;
   token: string;
   /** Raw base units. */
   amount: bigint;
   txHash: string;
   /** null while the event's block is still pre-confirmed. */
   blockNumber: number | null;
+}
+
+export interface EventScan {
+  /** Newest first; pre-confirmed (null block) sorts newest of all. */
+  entries: FootprintEntry[];
+  /** True when the RPC budget ran out before the floor - the OLDEST part of
+   * the window is missing, never the newest. */
+  truncated: boolean;
+  /** Events omitted because their layout was unexpected. */
+  skipped: number;
+  /** The latest block at scan time - entries are relative to it. */
+  latest: number;
 }
 
 /** Expected data widths; a pool upgrade that appends fields must surface as
@@ -58,8 +84,16 @@ export function parseFootprintEvent(ev: {
       ? ("deposit" as const)
       : ("withdrawal" as const);
   if (ev.data.length !== DATA_WIDTH[kind]) return null;
+  if (ev.keys.length < 3) return null;
+  let account: string;
+  try {
+    account = "0x" + BigInt(ev.keys[1]).toString(16);
+  } catch {
+    return null;
+  }
   return {
     kind,
+    account,
     token: ev.keys[2],
     amount: BigInt(ev.data[AMOUNT_INDEX[kind]]),
     txHash: ev.transaction_hash,
@@ -67,25 +101,23 @@ export function parseFootprintEvent(ev: {
   };
 }
 
-export async function fetchPublicFootprint(
-  address: string,
-  options?: { maxLookbackBlocks?: number },
-): Promise<{ entries: FootprintEntry[]; truncated: boolean; skipped: number }> {
+async function scanPoolEvents(opts: {
+  keys: string[][];
+  maxLookbackBlocks?: number;
+  maxRpcCalls: number;
+}): Promise<EventScan> {
   const provider = getProvider();
   const latest = await provider.getBlockNumber();
-  // One deterministic felt spelling - key matching is by value, but never
-  // hand the node an ambiguous padding.
-  const filterAddress = "0x" + BigInt(address).toString(16);
 
   const entries: FootprintEntry[] = [];
   let skipped = 0;
-  let callsLeft = MAX_RPC_CALLS;
+  let callsLeft = opts.maxRpcCalls;
   let hi = latest;
   let truncated = false;
   // A caller that only needs recent history (summaries, checks) can bound
   // the scan instead of walking back to the pool's deployment era.
-  const floor = options?.maxLookbackBlocks
-    ? Math.max(POOL_DEPLOYMENT_BLOCK, latest - options.maxLookbackBlocks)
+  const floor = opts.maxLookbackBlocks
+    ? Math.max(POOL_DEPLOYMENT_BLOCK, latest - opts.maxLookbackBlocks)
     : POOL_DEPLOYMENT_BLOCK;
 
   while (hi >= floor) {
@@ -99,9 +131,7 @@ export async function fetchPublicFootprint(
       }
       const page = await provider.getEvents({
         address: STRK20_POOL_ADDRESS,
-        // Position 0: either event selector. Position 1: our address - the
-        // depositor on Deposit, the public recipient on Withdrawal.
-        keys: [[DEPOSIT_SELECTOR, WITHDRAWAL_SELECTOR], [filterAddress]],
+        keys: opts.keys,
         from_block: { block_number: lo },
         to_block: { block_number: hi },
         chunk_size: CHUNK_SIZE,
@@ -113,7 +143,7 @@ export async function fetchPublicFootprint(
         if (parsed === null) {
           // Layout drift (pool upgrade?) - omit rather than show wrong numbers.
           skipped++;
-          console.warn("[cloakra] unexpected event data width:", ev.data.length);
+          console.warn("[cloakra] unexpected event layout:", ev.keys.length, ev.data.length);
           continue;
         }
         entries.push(parsed);
@@ -125,11 +155,61 @@ export async function fetchPublicFootprint(
     hi = lo - 1;
   }
 
-  // Newest first; pre-confirmed (null block) sorts newest of all.
   entries.sort(
     (a, b) =>
       (b.blockNumber ?? Number.MAX_SAFE_INTEGER) -
       (a.blockNumber ?? Number.MAX_SAFE_INTEGER),
   );
-  return { entries, truncated, skipped };
+  return { entries, truncated, skipped, latest };
+}
+
+/** One account's public legs. */
+export async function fetchPublicFootprint(
+  address: string,
+  options?: { maxLookbackBlocks?: number },
+): Promise<{ entries: FootprintEntry[]; truncated: boolean; skipped: number }> {
+  // One deterministic felt spelling - key matching is by value, but never
+  // hand the node an ambiguous padding.
+  const filterAddress = "0x" + BigInt(address).toString(16);
+  const scan = await scanPoolEvents({
+    // Position 0: either event selector. Position 1: our address - the
+    // depositor on Deposit, the public recipient on Withdrawal.
+    keys: [[DEPOSIT_SELECTOR, WITHDRAWAL_SELECTOR], [filterAddress]],
+    maxLookbackBlocks: options?.maxLookbackBlocks,
+    maxRpcCalls: MAX_RPC_CALLS,
+  });
+  return { entries: scan.entries, truncated: scan.truncated, skipped: scan.skipped };
+}
+
+let activityCache: { at: number; lookback: number; promise: Promise<EventScan> } | null = null;
+
+/**
+ * Every account's public legs over a bounded recent window - the crowd a
+ * withdrawal hides in, and the deposits an observer would try to pair it
+ * with. Public data; no wallet involvement. Cached briefly and shared, since
+ * the dashboard and the pre-send check both want it at once.
+ */
+export function fetchPoolActivity(options?: {
+  maxLookbackBlocks?: number;
+}): Promise<EventScan> {
+  const lookback = options?.maxLookbackBlocks ?? ACTIVITY_LOOKBACK_BLOCKS;
+  const now = Date.now();
+  if (
+    activityCache &&
+    activityCache.lookback === lookback &&
+    now - activityCache.at < ACTIVITY_CACHE_MS
+  ) {
+    return activityCache.promise;
+  }
+  const promise = scanPoolEvents({
+    keys: [[DEPOSIT_SELECTOR, WITHDRAWAL_SELECTOR]],
+    maxLookbackBlocks: lookback,
+    maxRpcCalls: ACTIVITY_MAX_RPC_CALLS,
+  });
+  activityCache = { at: now, lookback, promise };
+  // A failed scan must not be served from cache for 30 seconds.
+  promise.catch(() => {
+    if (activityCache?.promise === promise) activityCache = null;
+  });
+  return promise;
 }
