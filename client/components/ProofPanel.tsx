@@ -93,7 +93,7 @@ export default function ProofPanel() {
               <span
                 className={`size-2 shrink-0 rounded-full ${
                   h.state === "verified"
-                    ? "bg-white/90"
+                    ? "bg-emerald-400"
                     : h.state === "checking"
                       ? "bg-white/30"
                       : h.state === "not_found"
