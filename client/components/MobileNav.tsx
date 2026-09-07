@@ -5,7 +5,6 @@ import Link from "next/link";
 
 const LINKS = [
   { label: "How it works", href: "#how" },
-  { label: "Modules", href: "#modules" },
   { label: "Proof", href: "#proof" },
 ] as const;
 
@@ -73,6 +72,13 @@ export default function MobileNav() {
                   {l.label}
                 </a>
               ))}
+              <Link
+                href="/verify"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-3 text-base text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                Verify
+              </Link>
               <Link
                 href="/docs"
                 onClick={() => setOpen(false)}
