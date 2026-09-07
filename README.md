@@ -4,6 +4,9 @@
 
 Pay the team. Publish no salary table.
 
+<img width="2990" height="1710" alt="image" src="https://github.com/user-attachments/assets/42c8fb4c-f72a-4f4e-914d-2ee089a32760" />
+
+
 **Live app:** https://cloakra-app.vercel.app · **Demo video (2:21):** https://youtu.be/ZOYmaHv-x8M · **Docs:** https://cloakra-app.vercel.app/docs · **Verify a receipt:** https://cloakra-app.vercel.app/verify
 
 Built for the **STRK20 Private Sprint** (Aug 14 – Sep 7, 2026).
