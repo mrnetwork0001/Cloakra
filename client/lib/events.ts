@@ -40,7 +40,9 @@ const CHUNK_SIZE = 1000;
  * dashboard figure, not an audit trail. ~19 hours at the measured 1.7s
  * block time. */
 export const ACTIVITY_LOOKBACK_BLOCKS = 40_000;
-const ACTIVITY_MAX_RPC_CALLS = 8;
+/** 8 slices tile the window when each fits one page; the rest is headroom
+ * for nodes that answer an empty page with a continuation token. */
+const ACTIVITY_MAX_RPC_CALLS = 16;
 const ACTIVITY_CACHE_MS = 30_000;
 /** Pool-wide scans walk small newest-first slices (~2.4 h each) so a budget
  * cut costs the oldest slices, never the newest. */
@@ -129,9 +131,12 @@ async function scanPoolEvents(opts: {
   let truncated = false;
   let coveredDownTo = latest + 1;
   // A caller that only needs recent history (summaries, checks) can bound
-  // the scan instead of walking back to the pool's deployment era.
+  // the scan instead of walking back to the pool's deployment era. Blocks
+  // are inclusive on both ends, so a window of N blocks is [latest-N+1, latest]
+  // - without the +1 the pool scan's 8 slices of 5,000 would always leave one
+  // block unread and report every scan as truncated.
   const floor = opts.maxLookbackBlocks
-    ? Math.max(POOL_DEPLOYMENT_BLOCK, latest - opts.maxLookbackBlocks)
+    ? Math.max(POOL_DEPLOYMENT_BLOCK, latest - opts.maxLookbackBlocks + 1)
     : POOL_DEPLOYMENT_BLOCK;
 
   while (hi >= floor) {

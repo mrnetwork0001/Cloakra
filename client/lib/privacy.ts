@@ -57,10 +57,14 @@ const MAX_DEPOSITS_CHECKED = 30;
 const MAX_FEE_MULTIPLES = 10;
 
 /** Recipient-side bounds. Pool-wide there are more deposits and more
- * divisors, so each is capped to keep the false-positive rate honest. */
+ * divisors, so each is capped to keep the false-positive rate honest: only
+ * the deposit itself and the deposit net of ONE fee (the k-multiple fan-out
+ * is a payer-side batch tell, not a recipient echo), and equal shares are
+ * matched in a TIGHT band because a split divides a deposit exactly. */
 const MAX_POOL_DEPOSITS_CHECKED = 200;
 const MAX_SHARE_WAYS = 8;
-const MAX_SHARE_FEE_MULTIPLES = 3;
+const MAX_POOL_FEE_MULTIPLES = 1n;
+const MAX_SHARE_FEE_MULTIPLES = 1;
 const MAX_ECHO_LINES = 4;
 /** Fewer withdrawals than this across the whole pool in the window means the
  * crowd is thin enough to say so. */
@@ -75,12 +79,26 @@ const approxAge = (blocks: number): string => {
   return `~${Math.round(min / 60)} h ago`;
 };
 
-/** ±1% band with a 0.01 STRK floor - observers match approximately; so do we. */
+/** ±1% band with a 0.01 STRK floor - observers match approximately; so do
+ * we. The floor never exceeds 10% of the target, so a dust withdrawal cannot
+ * "match" every small deposit. */
 export function closeTo(a: bigint, b: bigint): boolean {
   if (b <= 0n) return false;
   const diff = a > b ? a - b : b - a;
   const floor = 10n ** 16n; // 0.01 STRK
-  const tol = b / 100n > floor ? b / 100n : floor;
+  const cappedFloor = floor < b / 10n ? floor : b / 10n;
+  const tol = b / 100n > cappedFloor ? b / 100n : cappedFloor;
+  return diff <= tol;
+}
+
+/** ±0.2% band with a 0.001 STRK floor: a split divides a deposit exactly,
+ * so a share match is held to a much tighter tolerance than an echo. */
+export function closeToTight(a: bigint, b: bigint): boolean {
+  if (b <= 0n) return false;
+  const diff = a > b ? a - b : b - a;
+  const floor = 10n ** 15n; // 0.001 STRK
+  const cappedFloor = floor < b / 10n ? floor : b / 10n;
+  const tol = b / 500n > cappedFloor ? b / 500n : cappedFloor;
   return diff <= tol;
 }
 
@@ -231,6 +249,9 @@ export function findUnshieldCorrelations(opts: {
   poolTruncated: boolean;
   /** Blocks the pool scan covers; only the copy depends on it. */
   coveredBlocks?: number;
+  /** The public address receiving the withdrawal - the cadence an observer
+   * sees is at the recipient, which need not be the signing wallet. */
+  recipient?: string;
 }): PrivacyWarning[] {
   const { poolEntries, ownEntries, selfAddress, currentBlock, amount, poolFee, poolTruncated } =
     opts;
@@ -240,8 +261,15 @@ export function findUnshieldCorrelations(opts: {
 
   // Other accounts' deposits only - the withdrawer's own are the payer
   // lens's job, and double-reporting them would drown the new signal.
+  // A deposit of at most one fee (Ready's 6 STRK registration is exactly
+  // that) leaves nothing shielded, so it cannot echo or split into any
+  // withdrawal - skip it rather than raise a false alarm.
+  const feeFloor = poolFee !== null && poolFee > 0n ? poolFee : 0n;
   const others = poolEntries
-    .filter((e) => e.kind === "deposit" && !sameFelt(e.account, selfAddress))
+    .filter(
+      (e) =>
+        e.kind === "deposit" && e.amount > feeFloor && !sameFelt(e.account, selfAddress),
+    )
     .slice(0, MAX_POOL_DEPOSITS_CHECKED);
 
   const ageOf = (e: FootprintEntry) =>
@@ -259,7 +287,7 @@ export function findUnshieldCorrelations(opts: {
     }
     let matched = false;
     if (poolFee !== null && poolFee > 0n) {
-      for (let k = 1n; k <= MAX_FEE_MULTIPLES; k++) {
+      for (let k = 1n; k <= MAX_POOL_FEE_MULTIPLES; k++) {
         const target = d.amount - k * poolFee;
         if (target <= 0n) break;
         if (closeTo(amount, target)) {
@@ -280,7 +308,7 @@ export function findUnshieldCorrelations(opts: {
       for (let k = 0n; k <= BigInt(feeSteps); k++) {
         const net = d.amount - k * (poolFee ?? 0n);
         if (net <= 0n) break;
-        if (closeTo(amount, net / n)) {
+        if (closeToTight(amount, net / n)) {
           shares.push({ deposit: d, n: Number(n), k: Number(k) });
           break share;
         }
@@ -310,19 +338,26 @@ export function findUnshieldCorrelations(opts: {
     const rest = shares.length - 1;
     const net = lead.k === 0 ? "" : lead.k === 1 ? ", net of one fee" : `, net of ${lead.k} fees`;
     out.push({
-      severity: isRecent(lead.deposit) ? "high" : "medium",
+      severity: shares.some((sh) => isRecent(sh.deposit)) ? "high" : "medium",
       message: `${fmt(amount)} STRK ≈ an equal 1/${lead.n} share of a ${fmt(lead.deposit.amount)} STRK public deposit by another account ${approxAge(ageOf(lead.deposit))}${net}${rest > 0 ? ` (and ${rest} other split-shaped match${rest === 1 ? "" : "es"})` : ""} - recipients of a split who each unshield their exact row re-link the run from the other end.`,
     });
   }
 
-  // Own cadence: repeated equal withdrawals read as a payroll rhythm.
-  const priorSame = ownEntries.filter(
-    (e) => e.kind === "withdrawal" && closeTo(amount, e.amount),
+  // Cadence: repeated equal withdrawals at the RECEIVING address read as a
+  // payroll rhythm - and that address need not be the signing wallet, so
+  // look it up in the pool-wide scan (own legs when unshielding to self).
+  const target = opts.recipient ?? selfAddress;
+  const cadenceSource = sameFelt(target, selfAddress) ? ownEntries : poolEntries;
+  const priorSame = cadenceSource.filter(
+    (e) => e.kind === "withdrawal" && sameFelt(e.account, target) && closeTo(amount, e.amount),
   ).length;
   if (priorSame > 0) {
+    const who = sameFelt(target, selfAddress)
+      ? `You have unshielded ≈ ${fmt(amount)} STRK before`
+      : `This recipient has received ≈ ${fmt(amount)} STRK from the pool before`;
     out.push({
       severity: "medium",
-      message: `You have unshielded ≈ ${fmt(amount)} STRK before (×${priorSame}). Repeated equal withdrawals form a recognisable cadence - different sizes at irregular times break it; dust changes do not.`,
+      message: `${who} (×${priorSame}). Repeated equal withdrawals form a recognisable cadence - different sizes at irregular times break it; dust changes do not.`,
     });
   }
 
@@ -355,7 +390,7 @@ export async function assessPrivacy(
   address: string,
   amounts: bigint[],
   kind: "transfer" | "withdraw",
-  options?: { toSelf?: boolean },
+  options?: { toSelf?: boolean; recipient?: string },
 ): Promise<PrivacyWarning[]> {
   const wantsPool = kind === "withdraw";
   const [footprint, currentBlock, poolFee, pool] = await Promise.all([
@@ -394,6 +429,7 @@ export async function assessPrivacy(
             poolFee,
             poolTruncated: pool.truncated,
             coveredBlocks: pool.coveredBlocks,
+            recipient: options?.recipient,
           }),
         );
       }
@@ -418,6 +454,9 @@ export async function assessPrivacy(
 /** Pool crowd for display - the same scan the unshield check uses. */
 export async function fetchPoolCrowd(): Promise<PoolCrowd> {
   const scan = await fetchPoolActivity({ maxLookbackBlocks: ACTIVITY_LOOKBACK_BLOCKS });
+  // A scan whose newest slice was cut by the budget read nothing - "0 · 0"
+  // over zero blocks is not a count, so report it as unreadable.
+  if (scan.coveredBlocks === 0) throw new Error("pool scan covered no blocks");
   return summarizePoolActivity(
     scan.entries,
     ACTIVITY_LOOKBACK_BLOCKS,

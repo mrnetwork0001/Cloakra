@@ -11,7 +11,7 @@ export interface PrivacyGate {
   passes: (
     amounts: bigint[],
     kind: "transfer" | "withdraw",
-    options?: { toSelf?: boolean },
+    options?: { toSelf?: boolean; recipient?: string },
   ) => Promise<boolean>;
   clear: () => void;
 }
@@ -33,7 +33,7 @@ export function usePrivacyGate(address: string): PrivacyGate {
     async (
       amounts: bigint[],
       kind: "transfer" | "withdraw",
-      options?: { toSelf?: boolean },
+      options?: { toSelf?: boolean; recipient?: string },
     ) => {
       const run = ++runRef.current;
       setChecking(true);

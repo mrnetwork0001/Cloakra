@@ -340,6 +340,46 @@ describe("auditReceipts - failures and inconclusive reads", () => {
   });
 });
 
+describe("auditReceipts - attribution", () => {
+  it("a forged sibling with a mangled signature fails its row, not the org's signature", async () => {
+    const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    const forged = { ...rs[0], recipient: R(7, 1n).address, signature: ["0x9", "0x9"] };
+    const report = await auditReceipts(load([...rs, forged]), {
+      ...allGood,
+      signature: async (r) => r.signature[0] !== "0x9",
+    });
+    const run = report.runs[0];
+    expect(run.verdict).toBe("failed");
+    expect(run.signature).toBe(true);
+    expect(run.notes.some((n) => /a signature the org account did not produce/.test(n))).toBe(true);
+    expect(run.rows[2].flags.some((f) => /not the org's/.test(f))).toBe(true);
+    expect(run.verifiedTotal).toBe(8n * STRK);
+  });
+
+  it("claimedCount comes from the first WELL-FORMED row, whatever the drop order", async () => {
+    const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    const bad = { ...rs[1], recipientCount: "2" };
+    const a = await auditReceipts(load([bad, rs[0], rs[1]]), allGood);
+    const b = await auditReceipts(load([rs[0], rs[1], bad]), allGood);
+    expect(a.runs.map((r) => r.claimedCount)).toEqual(b.runs.map((r) => r.claimedCount));
+    expect(a.runs.find((r) => r.claimedCount === 2)).toBeDefined();
+  });
+
+  it("CSV carries a 'counted' column that matches the card's verified total", async () => {
+    const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    const forged = { ...rs[0], amount: "0x" + (9n * STRK).toString(16) };
+    const report = await auditReceipts(load([rs[0], rs[1], forged]), allGood);
+    const lines = auditReportCsv(report).trimEnd().split("\n");
+    const header = lines[0].split(",");
+    const iCounted = header.indexOf("counted");
+    const iAmount = header.indexOf("amount_strk");
+    expect(iCounted).toBeGreaterThan(0);
+    const counted = lines.slice(1).map((l) => l.split(",")).filter((c) => c[iCounted] === "true");
+    expect(counted).toHaveLength(1);
+    expect(counted[0][iAmount]).toBe("3");
+  });
+});
+
 describe("auditReceipts - several runs at once", () => {
   it("groups receipts by run and audits each independently", async () => {
     const a = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);

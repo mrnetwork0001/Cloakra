@@ -118,6 +118,10 @@ export interface AuditRow {
   recipient: string;
   /** Row-level anomalies, e.g. a second receipt naming the same recipient. */
   flags: string[];
+  /** True when the row contributed to verifiedRows/verifiedTotal - ok and
+   * not in a recipient conflict. The CSV carries it so a spreadsheet sum
+   * matches the card. */
+  counted: boolean;
 }
 
 export interface AuditRun {
@@ -217,17 +221,11 @@ function dedupeKey(receipt: unknown): string {
   ].join("|");
 }
 
-/**
- * Verify every receipt and fold the results into runs. Chain checks are
- * de-duplicated: one signature read per distinct (run, signature) and one
- * settlement read per transaction, however many receipts share them.
- */
-export async function auditReceipts(
-  loaded: LoadedReceipt[],
-  checkers: AuditCheckers = defaultCheckers,
-  options?: { concurrency?: number; onProgress?: (done: number, total: number) => void },
-): Promise<AuditReport> {
-  // Drop duplicates (the same file dragged twice, or resent with a new note).
+/** Drop duplicates (the same file dragged twice, or resent with a new note). */
+export function dedupeReceipts(loaded: LoadedReceipt[]): {
+  unique: LoadedReceipt[];
+  duplicatesIgnored: number;
+} {
   const seen = new Set<string>();
   const unique: LoadedReceipt[] = [];
   let duplicatesIgnored = 0;
@@ -240,6 +238,20 @@ export async function auditReceipts(
     seen.add(c);
     unique.push(item);
   }
+  return { unique, duplicatesIgnored };
+}
+
+/**
+ * Verify every receipt and fold the results into runs. Chain checks are
+ * de-duplicated: one signature read per distinct (run, signature) and one
+ * settlement read per transaction, however many receipts share them.
+ */
+export async function auditReceipts(
+  loaded: LoadedReceipt[],
+  checkers: AuditCheckers = defaultCheckers,
+  options?: { concurrency?: number; onProgress?: (done: number, total: number) => void },
+): Promise<AuditReport> {
+  const { unique, duplicatesIgnored } = dedupeReceipts(loaded);
 
   const limit = limiter(options?.concurrency ?? 4);
   const sigCache = new Map<string, Promise<boolean | null>>();
@@ -287,7 +299,7 @@ export async function auditReceipts(
         result.ok = receiptOk(result);
       }
       tick();
-      return { key, source, receipt: rec, result, amount, recipient, flags: [] };
+      return { key, source, receipt: rec, result, amount, recipient, flags: [], counted: false };
     }),
   );
 
@@ -297,15 +309,13 @@ export async function auditReceipts(
     const rec = row.receipt as Record<string, unknown>;
     let run = runs.get(row.key);
     if (!run) {
-      const count = rec.recipientCount;
       run = {
         key: row.key,
         operation: typeof rec.operation === "string" ? rec.operation : "unknown",
         org: typeof rec.org === "string" ? rec.org : "",
         txHash: typeof rec.txHash === "string" ? rec.txHash : "",
         merkleRoot: typeof rec.merkleRoot === "string" ? rec.merkleRoot : "",
-        claimedCount:
-          typeof count === "number" && Number.isInteger(count) && count > 0 ? count : null,
+        claimedCount: null,
         rows: [],
         providedCount: 0,
         verifiedRows: 0,
@@ -320,6 +330,10 @@ export async function auditReceipts(
       runs.set(row.key, run);
     }
     run.rows.push(row);
+    if (run.claimedCount === null) {
+      const count = rec.recipientCount;
+      if (typeof count === "number" && Number.isInteger(count) && count > 0) run.claimedCount = count;
+    }
   }
 
   for (const run of runs.values()) finalizeRun(run);
@@ -376,25 +390,48 @@ function finalizeRun(run: AuditRun): void {
   let sigTrue = 0;
   let sigFalse = 0;
   let sigNull = 0;
+  let rowSigFail = 0;
+  // The run-level "org signature" is a statement about the ORG, so it is
+  // read from rows whose leaf is inside the commitment. A forged sibling
+  // with a mangled signature fails its own row - it must not be reported as
+  // the org's signature failing on a run the org did sign.
+  const inCommitment = run.rows.filter((row) => row.result.structure && row.result.merkle);
+  const sigPool = new Set(
+    inCommitment.length > 0 ? inCommitment : run.rows.filter((row) => row.result.structure),
+  );
   const txKinds = new Set<ReceiptVerification["transaction"]>();
   for (const row of run.rows) {
     const r = row.result;
     if (row.amount !== null) run.claimedTotal += row.amount;
     if (r.ok && !conflicted.has(row)) {
+      row.counted = true;
       run.verifiedRows++;
       run.verifiedTotal += row.amount ?? 0n;
     }
     if (!r.structure || !r.merkle) anyFail = true;
-    if (r.signature === true) sigTrue++;
-    else if (r.signature === false) sigFalse++;
-    else sigNull++;
+    if (r.signature === false) {
+      rowSigFail++;
+      anyFail = true;
+      if (!sigPool.has(row)) {
+        row.flags.push("The signature on this file is not the org's - it does not match the signed run.");
+      }
+    }
+    if (sigPool.has(row)) {
+      if (r.signature === true) sigTrue++;
+      else if (r.signature === false) sigFalse++;
+      else sigNull++;
+    }
     if (r.structure) txKinds.add(r.transaction);
     if (r.transaction === "SUCCEEDED_NOT_POOL" || r.transaction === "REVERTED" || r.transaction === "NOT_FOUND")
       anyFail = true;
     if (r.structure && (r.signature === null || r.transaction === "UNKNOWN")) anyUnknown = true;
   }
-  if (sigFalse > 0) anyFail = true;
   run.signature = sigFalse > 0 ? false : sigNull > 0 ? null : sigTrue > 0 ? true : null;
+  if (rowSigFail > 0 && sigFalse === 0) {
+    run.notes.push(
+      `${rowSigFail} receipt${rowSigFail === 1 ? " carries" : "s carry"} a signature the org account did not produce. The org's signature over this run verifies on the other receipts.`,
+    );
+  }
   run.transaction =
     txKinds.size === 0
       ? "UNKNOWN"
@@ -458,6 +495,7 @@ export function auditReportCsv(report: AuditReport): string {
     "signature",
     "transaction",
     "ok",
+    "counted",
     "flags",
     "source",
   ];
@@ -478,6 +516,7 @@ export function auditReportCsv(report: AuditReport): string {
           row.result.signature === null ? "unchecked" : row.result.signature,
           row.result.transaction,
           row.result.ok,
+          row.counted,
           row.flags.join("; "),
           row.source,
         ]

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AuditReportView from "@/components/AuditReportView";
 import {
   auditReceipts,
+  dedupeReceipts,
   parseReceiptBundle,
   type AuditReport,
   type LoadedReceipt,
@@ -162,6 +163,9 @@ export default function VerifyPage() {
   const auditRun = useRef(0);
 
   const addFiles = useCallback(async (list: FileList | File[]) => {
+    // A changed file set makes any in-flight audit stale - bump before the
+    // first await so it cannot complete between the drop and the reset.
+    auditRun.current++;
     const next: LoadedReceipt[] = [];
     const errs: string[] = [];
     for (const f of Array.from(list)) {
@@ -189,7 +193,7 @@ export default function VerifyPage() {
   const onVerify = useCallback(async () => {
     const pasted = parseReceiptBundle(input, "pasted");
     const all = [...files, ...pasted.receipts];
-    if (pasted.errors.length > 0) setLoadErrors(pasted.errors);
+    setLoadErrors(pasted.errors); // a clean paste clears the previous paste's errors
     if (all.length === 0) {
       setState({
         kind: "error",
@@ -199,7 +203,8 @@ export default function VerifyPage() {
       return;
     }
     const token = ++auditRun.current;
-    setState({ kind: "verifying", done: 0, total: all.length });
+    // Seed the denominator from the deduped count so it never shrinks mid-run.
+    setState({ kind: "verifying", done: 0, total: dedupeReceipts(all).unique.length });
     try {
       const report = await auditReceipts(all, undefined, {
         onProgress: (done, total) => {
@@ -207,7 +212,12 @@ export default function VerifyPage() {
         },
       });
       if (auditRun.current !== token) return;
-      const only = report.rowCount === 1 && report.runs.length === 1 ? report.runs[0].rows[0] : null;
+      // The single-receipt card only when nothing was collapsed into it - the
+      // audit view is the one that says "N identical files ignored".
+      const only =
+        report.rowCount === 1 && report.runs.length === 1 && report.duplicatesIgnored === 0
+          ? report.runs[0].rows[0]
+          : null;
       if (only && only.result.structure) {
         setState({
           kind: "single",
@@ -228,6 +238,11 @@ export default function VerifyPage() {
 
   const busy = state.kind === "verifying";
   const loadedCount = files.length;
+  // Label from the number of receipts that would actually be verified.
+  const receiptCount = useMemo(
+    () => dedupeReceipts([...files, ...parseReceiptBundle(input, "pasted").receipts]).unique.length,
+    [files, input],
+  );
 
   return (
     <>
@@ -253,7 +268,11 @@ export default function VerifyPage() {
             e.preventDefault();
             setDragging(true);
           }}
-          onDragLeave={() => setDragging(false)}
+          onDragLeave={(e) => {
+            // Crossing into a child fires dragleave on the zone - ignore it.
+            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+            setDragging(false);
+          }}
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
@@ -284,6 +303,8 @@ export default function VerifyPage() {
             aria-label="Receipt files"
             onChange={(e) => {
               if (e.target.files) void addFiles(e.target.files);
+              // Reset so choosing the same path again (after editing it) fires.
+              e.currentTarget.value = "";
             }}
           />
           {loadedCount > 0 ? (
@@ -321,7 +342,7 @@ export default function VerifyPage() {
         >
           {state.kind === "verifying"
             ? `Verifying ${state.done}/${state.total}…`
-            : loadedCount + (input.trim() ? 1 : 0) > 1
+            : receiptCount > 1
               ? "Audit the run"
               : "Verify"}
         </button>

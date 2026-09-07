@@ -60,7 +60,7 @@ export default function WithdrawPanel({
 
     if (
       !force &&
-      !(await gate.passes([raw], "withdraw", { toSelf: sameFelt(to, address) }))
+      !(await gate.passes([raw], "withdraw", { toSelf: sameFelt(to, address), recipient: to }))
     )
       return;
     // The gate awaited RPC - re-check the signer wasn't switched meanwhile.

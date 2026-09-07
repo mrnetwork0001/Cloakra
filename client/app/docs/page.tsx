@@ -354,9 +354,9 @@ export default function DocsPage() {
             public activity by <em>every</em> account and checks:
           </P>
           <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white/60">
-            <li>· Whether the amount approximately echoes another account&apos;s recent public deposit, or that deposit net of pool fees.</li>
-            <li>· Whether it looks like an <strong className="text-white">equal share</strong> of such a deposit - 1/2 through 1/8, net of a few fees. Recipients of a split who each unshield their exact row re-link the run from the other end.</li>
-            <li>· Whether you have unshielded about this amount before. Repeated equal withdrawals form a payroll cadence.</li>
+            <li>· Whether the amount approximately echoes another account&apos;s recent public deposit, or that deposit net of one pool fee. Deposits the fee consumes entirely (a registration) are ignored.</li>
+            <li>· Whether it looks like an <strong className="text-white">equal share</strong> of such a deposit - 1/2 through 1/8, net of at most one fee, matched tightly because a split divides a deposit exactly. Recipients of a split who each unshield their exact row re-link the run from the other end.</li>
+            <li>· Whether the receiving address has taken about this amount out of the pool before. Repeated equal withdrawals form a payroll cadence.</li>
             <li>· How busy the pool is. If few STRK withdrawals happened in the window (up to ~19 hours), yours has a thin crowd to hide in, and the check says so with the number.</li>
           </ul>
           <P>

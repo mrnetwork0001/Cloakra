@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   closeTo,
+  closeToTight,
   findCorrelations,
   findUnshieldCorrelations,
   summarizePoolActivity,
@@ -44,6 +45,22 @@ describe("closeTo", () => {
     expect(closeTo(495n * STRK, 500n * STRK)).toBe(true); // 1% band
     expect(closeTo(490n * STRK, 500n * STRK)).toBe(false);
     expect(closeTo(1n, 0n)).toBe(false);
+  });
+});
+
+describe("closeTo floors", () => {
+  it("the absolute floor never exceeds 10% of the target, so dust cannot match everything", () => {
+    // target 0.02 STRK: 1% = 0.0002, floor 0.01 would swallow it; capped to 0.002
+    const target = 2n * 10n ** 16n;
+    expect(closeTo(target + 10n ** 15n, target)).toBe(true); // 0.021 vs 0.020
+    expect(closeTo(target + 5n * 10n ** 15n, target)).toBe(false); // 0.025 vs 0.020
+    expect(closeTo(5n * 10n ** 15n, 6n * STRK + 3n * 10n ** 16n)).toBe(false);
+  });
+
+  it("closeToTight holds shares to ±0.2%", () => {
+    expect(closeToTight(4999n * STRK / 100n, 50n * STRK)).toBe(true); // 49.99
+    expect(closeToTight(499n * STRK / 10n, 50n * STRK)).toBe(true); // 49.9 exactly on the band
+    expect(closeToTight(497n * STRK / 10n, 50n * STRK)).toBe(false); // 49.7 (0.6%)
   });
 });
 
@@ -289,16 +306,16 @@ describe("findUnshieldCorrelations - other accounts' deposits", () => {
     expect(ws.filter((w) => /by another account/.test(w.message)).length).toBeLessThanOrEqual(4);
   });
 
-  it("multi-fee share wording, overflow suffix, and high severity when the lead deposit is recent", () => {
-    // 112 net of 2 fees = 100 -> 1/4 = 25 (recent); 212 net of 2 fees = 200 -> 1/8 = 25 (old).
+  it("net-of-one-fee share wording, overflow suffix, and severity from the lead deposit", () => {
+    // 106 net of 1 fee = 100 -> 1/4 = 25 (recent); 206 net of 1 fee = 200 -> 1/8 = 25 (old).
     const ws = findUnshieldCorrelations({
       ...recipientBase,
-      poolEntries: busyPool([dep(112n * STRK, 99_500, OTHER), dep(212n * STRK, 80_000, OTHER)]),
+      poolEntries: busyPool([dep(106n * STRK, 99_500, OTHER), dep(206n * STRK, 80_000, OTHER)]),
       amount: 25n * STRK,
     });
     const share = ws.find((w) => /equal 1\/4 share/.test(w.message));
     expect(share?.severity).toBe("high");
-    expect(share?.message).toMatch(/net of 2 fees/);
+    expect(share?.message).toMatch(/net of one fee/);
     expect(share?.message).toMatch(/and 1 other split-shaped match\)/);
     expect(ws.filter((w) => /equal 1\//.test(w.message))).toHaveLength(1);
   });
@@ -336,6 +353,50 @@ describe("findUnshieldCorrelations - other accounts' deposits", () => {
     expect(ws.find((w) => /more public deposit/.test(w.message))?.message).toMatch(/last ~5 h/);
   });
 
+  it("ignores deposits the fee consumes entirely - a registration is not a split", () => {
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(6n * STRK, 99_500, OTHER)]),
+      amount: 3n * STRK,
+    });
+    expect(ws.some((w) => /share|by another account/.test(w.message))).toBe(false);
+    const six = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(6n * STRK, 99_500, OTHER)]),
+      amount: 6n * STRK,
+    });
+    expect(six.some((w) => /by another account/.test(w.message))).toBe(false);
+  });
+
+  it("only the deposit and deposit-minus-one-fee are echoes on the recipient side", () => {
+    // 32 - 2 fees = 20: a payer-side batch tell, not a recipient echo.
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(32n * STRK, 99_500, OTHER)]),
+      amount: 20n * STRK,
+    });
+    expect(ws.some((w) => /by another account/.test(w.message))).toBe(false);
+  });
+
+  it("a share is matched tightly - 1% off is not an equal share", () => {
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(100n * STRK, 90_000, OTHER)]),
+      amount: 2475n * STRK / 100n, // 24.75 vs 25 (1% off)
+    });
+    expect(ws.some((w) => /equal 1\/4 share/.test(w.message))).toBe(false);
+  });
+
+  it("the share line is high when ANY matching deposit is recent, not only the smallest-n one", () => {
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(200n * STRK, 89_000, OTHER), dep(300n * STRK, 99_900, OTHER)]),
+      amount: 100n * STRK,
+    });
+    const share = ws.find((w) => /equal 1\/2 share/.test(w.message));
+    expect(share?.severity).toBe("high");
+  });
+
   it("skips fee-shaped matches when the fee is unknown but still finds direct echoes", () => {
     const ws = findUnshieldCorrelations({
       ...recipientBase,
@@ -348,7 +409,32 @@ describe("findUnshieldCorrelations - other accounts' deposits", () => {
   });
 });
 
-describe("findUnshieldCorrelations - own cadence", () => {
+describe("findUnshieldCorrelations - cadence", () => {
+  it("looks at the RECEIVING address in the pool scan when unshielding elsewhere", () => {
+    const B = "0x" + "c".repeat(60);
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      recipient: B,
+      poolEntries: busyPool([wdr(100n * STRK, 10, B), wdr(100n * STRK, 20, B), wdr(100n * STRK, 30, SELF)]),
+      amount: 100n * STRK,
+    });
+    const cadence = ws.find((w) => /cadence/.test(w.message));
+    expect(cadence?.message).toMatch(/This recipient has received/);
+    expect(cadence?.message).toMatch(/×2/);
+  });
+
+  it("does not blame the recipient for the signer's own history", () => {
+    const B = "0x" + "c".repeat(60);
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      recipient: B,
+      ownEntries: [wdr(100n * STRK, 10), wdr(100n * STRK, 20)],
+      poolEntries: busyPool(),
+      amount: 100n * STRK,
+    });
+    expect(ws.some((w) => /cadence/.test(w.message))).toBe(false);
+  });
+
   it("flags repeated equal withdrawals with a count", () => {
     const ws = findUnshieldCorrelations({
       ...recipientBase,
