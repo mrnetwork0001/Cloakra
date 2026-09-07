@@ -212,14 +212,16 @@ export interface ReceiptVerification {
   ok: boolean;
 }
 
-const isFelt = (v: unknown): boolean => {
-  if (typeof v !== "string" && typeof v !== "number") return false;
-  try {
-    return BigInt(v) >= 0n;
-  } catch {
-    return false;
-  }
-};
+const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
+/** A felt as a receipt carries it: a 0x-hex or decimal STRING below the
+ * field prime. Strings only - signRun writes every felt as hex, and the
+ * PayoutReceipt type promises strings to the UI. `BigInt("")` is 0n, so the
+ * shape is checked before parsing; values >= the prime are rejected because
+ * an alias (x + k*P) would hash to the same leaf as x while reading as a
+ * different recipient. */
+const FELT_RE = /^(0x[0-9a-fA-F]+|[0-9]+)$/;
+const isFelt = (v: unknown): boolean =>
+  typeof v === "string" && FELT_RE.test(v) && BigInt(v) < FIELD_PRIME;
 
 /**
  * Pure: is this a well-formed cloakra-receipt-v1 whose chain and pool are
@@ -254,8 +256,10 @@ export function checkReceiptStructure(receipt: unknown): receipt is PayoutReceip
 export function checkReceiptMerkle(receipt: PayoutReceipt): boolean {
   try {
     const leaf = computeLeaf(receipt.recipient, BigInt(receipt.amount), receipt.salt);
+    // proofMerklePath ends in a string comparison, and the Poseidon helpers
+    // emit canonical lowercase unpadded hex - so canonicalize the stored root.
     return merkle.proofMerklePath(
-      receipt.merkleRoot,
+      toHex(receipt.merkleRoot),
       leaf,
       receipt.proof,
       hash.computePoseidonHash,

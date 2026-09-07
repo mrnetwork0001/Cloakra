@@ -9,7 +9,7 @@ import {
 import type { FootprintEntry } from "@/lib/events";
 
 const STRK = 10n ** 18n;
-const TOKEN = "0x" + "2".repeat(60);
+const TOKEN = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"; // STRK
 const SELF = "0x" + "a".repeat(60);
 const OTHER = "0x" + "b".repeat(60);
 
@@ -176,8 +176,21 @@ const recipientBase = {
 
 describe("summarizePoolActivity", () => {
   it("counts each kind and carries the window facts", () => {
-    const s = summarizePoolActivity([dep(1n, 1), dep(2n, 2), wdr(3n, 3)], 40_000, true);
-    expect(s).toEqual({ deposits: 2, withdrawals: 1, lookbackBlocks: 40_000, truncated: true });
+    const s = summarizePoolActivity([dep(1n, 1), dep(2n, 2), wdr(3n, 3)], 40_000, true, 12_000);
+    expect(s).toEqual({
+      deposits: 2,
+      withdrawals: 1,
+      lookbackBlocks: 40_000,
+      coveredBlocks: 12_000,
+      truncated: true,
+    });
+  });
+
+  it("counts STRK legs only - other tokens are not a crowd for a STRK withdrawal", () => {
+    const eth = { ...wdr(3n, 3), token: "0x" + "e".repeat(60) };
+    const s = summarizePoolActivity([wdr(1n, 1), eth], 40_000, false);
+    expect(s.withdrawals).toBe(1);
+    expect(s.coveredBlocks).toBe(40_000);
   });
 });
 
@@ -276,6 +289,53 @@ describe("findUnshieldCorrelations - other accounts' deposits", () => {
     expect(ws.filter((w) => /by another account/.test(w.message)).length).toBeLessThanOrEqual(4);
   });
 
+  it("multi-fee share wording, overflow suffix, and high severity when the lead deposit is recent", () => {
+    // 112 net of 2 fees = 100 -> 1/4 = 25 (recent); 212 net of 2 fees = 200 -> 1/8 = 25 (old).
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(112n * STRK, 99_500, OTHER), dep(212n * STRK, 80_000, OTHER)]),
+      amount: 25n * STRK,
+    });
+    const share = ws.find((w) => /equal 1\/4 share/.test(w.message));
+    expect(share?.severity).toBe("high");
+    expect(share?.message).toMatch(/net of 2 fees/);
+    expect(share?.message).toMatch(/and 1 other split-shaped match\)/);
+    expect(ws.filter((w) => /equal 1\//.test(w.message))).toHaveLength(1);
+  });
+
+  it("a pre-confirmed deposit by another account is treated as seconds old (high)", () => {
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool([dep(20n * STRK, null, OTHER)]),
+      amount: 20n * STRK,
+    });
+    const echo = ws.find((w) => /by another account/.test(w.message));
+    expect(echo?.severity).toBe("high");
+    expect(echo?.message).toMatch(/~1 min ago/);
+  });
+
+  it("with the fee unknown, exact shares (k = 0) are still checked", () => {
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolFee: null,
+      poolEntries: busyPool([dep(100n * STRK, 90_000, OTHER)]),
+      amount: 25n * STRK,
+    });
+    expect(ws.some((w) => /equal 1\/4 share/.test(w.message))).toBe(true);
+    expect(ws.some((w) => /net of/.test(w.message))).toBe(false);
+  });
+
+  it("copy quotes the covered window, not the nominal one", () => {
+    const many = Array.from({ length: 6 }, (_, i) => dep(20n * STRK, 99_000 - i, OTHER));
+    const ws = findUnshieldCorrelations({
+      ...recipientBase,
+      poolEntries: busyPool(many),
+      amount: 20n * STRK,
+      coveredBlocks: 10_000, // ~4.7 h
+    });
+    expect(ws.find((w) => /more public deposit/.test(w.message))?.message).toMatch(/last ~5 h/);
+  });
+
   it("skips fee-shaped matches when the fee is unknown but still finds direct echoes", () => {
     const ws = findUnshieldCorrelations({
       ...recipientBase,
@@ -322,7 +382,7 @@ describe("findUnshieldCorrelations - crowd", () => {
     });
     const quiet = ws.find((w) => /pool is quiet/.test(w.message));
     expect(quiet?.severity).toBe("medium");
-    expect(quiet?.message).toMatch(/only 2 withdrawals/);
+    expect(quiet?.message).toMatch(/only 2 STRK withdrawals/);
     expect(quiet?.message).toMatch(/one of 3/);
   });
 
@@ -332,7 +392,7 @@ describe("findUnshieldCorrelations - crowd", () => {
       poolEntries: [dep(500n * STRK, 1, OTHER)],
       amount: 20n * STRK,
     });
-    expect(ws.some((w) => /no withdrawals by anyone/.test(w.message))).toBe(true);
+    expect(ws.some((w) => /no STRK withdrawals by anyone/.test(w.message))).toBe(true);
   });
 
   it("stays silent about the crowd once the threshold is met", () => {

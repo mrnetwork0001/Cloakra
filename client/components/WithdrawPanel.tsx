@@ -14,6 +14,7 @@ import {
   type PanelPhase,
 } from "@/lib/strk20";
 import { usePoolCrowd, usePoolFee } from "@/lib/hooks";
+import { crowdHours } from "@/lib/privacy";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 import { usePrivacyGate, PrivacyWarnings } from "./PrivacyGate";
@@ -165,11 +166,16 @@ export default function WithdrawPanel({
           <dd>{fee !== null ? `${formatTokenAmount(fee)} STRK` : "…"}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt>Pool crowd, last ~19 h (all accounts)</dt>
+          <dt>
+            STRK pool crowd, all accounts
+            {crowd && crowd !== "unavailable" ? `, last ~${crowdHours(crowd)} h` : ""}
+          </dt>
           <dd className="text-right">
-            {crowd
-              ? `${crowd.withdrawals}${crowd.truncated ? "+" : ""} withdrawal${crowd.withdrawals === 1 && !crowd.truncated ? "" : "s"} · ${crowd.deposits}${crowd.truncated ? "+" : ""} deposit${crowd.deposits === 1 && !crowd.truncated ? "" : "s"}`
-              : "…"}
+            {crowd === null
+              ? "…"
+              : crowd === "unavailable"
+                ? "unreadable (RPC)"
+                : `${crowd.withdrawals} withdrawal${crowd.withdrawals === 1 ? "" : "s"} · ${crowd.deposits} deposit${crowd.deposits === 1 ? "" : "s"}`}
           </dd>
         </div>
       </dl>

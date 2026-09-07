@@ -132,7 +132,8 @@ export interface AuditRun {
   /** Distinct recipients among the rows. */
   providedCount: number;
   verifiedRows: number;
-  /** Sum of amounts over rows that fully verify. */
+  /** Sum of amounts over rows that fully verify and are not in a recipient
+   * conflict. */
   verifiedTotal: bigint;
   /** Sum over every readable row, verified or not - what the files CLAIM. */
   claimedTotal: bigint;
@@ -198,6 +199,25 @@ function sortKeys(value: unknown): unknown {
 }
 
 /**
+ * Identity of a receipt for de-duplication: every field a check reads. Two
+ * files that differ only in unsigned, unchecked fields (note, amountDisplay)
+ * or in how a felt is spelled are the same receipt - reporting them as a
+ * recipient conflict would call an honest resend a forgery. Malformed files
+ * fall back to their canonical JSON.
+ */
+function dedupeKey(receipt: unknown): string {
+  if (!checkReceiptStructure(receipt)) return canonical(receipt);
+  return [
+    runKey(receipt as unknown as Record<string, unknown>),
+    felt(receipt.recipient),
+    felt(receipt.amount),
+    felt(receipt.salt),
+    receipt.proof.map(felt).join(","),
+    receipt.signature.map(felt).join(","),
+  ].join("|");
+}
+
+/**
  * Verify every receipt and fold the results into runs. Chain checks are
  * de-duplicated: one signature read per distinct (run, signature) and one
  * settlement read per transaction, however many receipts share them.
@@ -207,12 +227,12 @@ export async function auditReceipts(
   checkers: AuditCheckers = defaultCheckers,
   options?: { concurrency?: number; onProgress?: (done: number, total: number) => void },
 ): Promise<AuditReport> {
-  // Drop byte-identical duplicates (the same file dragged twice).
+  // Drop duplicates (the same file dragged twice, or resent with a new note).
   const seen = new Set<string>();
   const unique: LoadedReceipt[] = [];
   let duplicatesIgnored = 0;
   for (const item of loaded) {
-    const c = canonical(item.receipt);
+    const c = dedupeKey(item.receipt);
     if (seen.has(c)) {
       duplicatesIgnored++;
       continue;
@@ -335,10 +355,14 @@ function finalizeRun(run: AuditRun): void {
     byRecipient.set(row.recipient, [...(byRecipient.get(row.recipient) ?? []), row]);
   }
   let conflicts = 0;
+  // At most one of a conflicting pair is genuine and the code cannot tell
+  // which, so neither may count toward the verified figures.
+  const conflicted = new Set<AuditRow>();
   for (const [, rowsFor] of byRecipient) {
     if (rowsFor.length > 1) {
       conflicts++;
       for (const row of rowsFor) {
+        conflicted.add(row);
         row.flags.push(
           `${rowsFor.length} receipts in this run name this recipient - at most one can be genuine.`,
         );
@@ -356,7 +380,7 @@ function finalizeRun(run: AuditRun): void {
   for (const row of run.rows) {
     const r = row.result;
     if (row.amount !== null) run.claimedTotal += row.amount;
-    if (r.ok) {
+    if (r.ok && !conflicted.has(row)) {
       run.verifiedRows++;
       run.verifiedTotal += row.amount ?? 0n;
     }
@@ -408,8 +432,15 @@ function finalizeRun(run: AuditRun): void {
 }
 
 const csvCell = (v: string | number | bigint | boolean | null): string => {
-  const s = v === null ? "" : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = v === null ? "" : String(v);
+  // Spreadsheets evaluate a cell that starts with = + - @ TAB or CR as a
+  // formula even when quoted (CSV injection). The operation string and the
+  // file name are attacker-controlled: prefix with an apostrophe so the text
+  // is shown, never run. Amounts are felts, never negative, so numeric
+  // columns are untouched.
+  const formulaLike = /^[=+\-@\t\r]/.test(s);
+  if (formulaLike) s = "'" + s;
+  return formulaLike || /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
 /** A flat, spreadsheet-ready report - one line per receipt. */

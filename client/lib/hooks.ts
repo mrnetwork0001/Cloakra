@@ -28,13 +28,17 @@ export function usePoolFee(active: boolean): bigint | null {
   return fee;
 }
 
+export type PoolCrowdState = PoolCrowd | "unavailable" | null;
+
 /**
- * The pool's recent crowd for display - withdrawals and deposits by anyone
- * over the last ~19 hours. Public data over our own RPC; shares the scan the
- * unshield privacy check runs, via the cache in events.ts.
+ * The pool's recent STRK crowd for display - withdrawals and deposits by
+ * anyone over the last ~19 hours. Public data over our own RPC; shares the
+ * scan the unshield privacy check runs, via the cache in events.ts. A failed
+ * scan reports "unavailable" unless an earlier good value exists, so the
+ * panel shows a dash instead of an ellipsis that never resolves.
  */
-export function usePoolCrowd(active: boolean): PoolCrowd | null {
-  const [crowd, setCrowd] = useState<PoolCrowd | null>(null);
+export function usePoolCrowd(active: boolean): PoolCrowdState {
+  const [crowd, setCrowd] = useState<PoolCrowdState>(null);
   useEffect(() => {
     if (!active) return;
     let stale = false;
@@ -43,7 +47,7 @@ export function usePoolCrowd(active: boolean): PoolCrowd | null {
         if (!stale) setCrowd(value);
       })
       .catch(() => {
-        /* keep last good value; the panel shows a dash */
+        if (!stale) setCrowd((prev) => (prev && prev !== "unavailable" ? prev : "unavailable"));
       });
     return () => {
       stale = true;

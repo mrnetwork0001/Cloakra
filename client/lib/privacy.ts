@@ -25,7 +25,22 @@ import {
   type FootprintEntry,
 } from "./events";
 import { getPoolFeeCached, getProvider } from "./pool";
+import { STRK_TOKEN_ADDRESS } from "./config";
 import { formatTokenAmount, sameFelt } from "./strk20";
+
+/** The checks and the crowd figure are about STRK. The pool carries other
+ * tokens too, and `token` is a public key on both events - an ETH deposit
+ * must never read as an echo of a STRK withdrawal, nor pad the crowd. */
+const strkOnly = (entries: FootprintEntry[]): FootprintEntry[] =>
+  entries.filter((e) => {
+    try {
+      return sameFelt(e.token, STRK_TOKEN_ADDRESS);
+    } catch {
+      return false;
+    }
+  });
+
+const hoursOf = (blocks: number) => Math.max(1, Math.round((blocks * 1.7) / 3600));
 
 export interface PrivacyWarning {
   severity: "high" | "medium";
@@ -177,23 +192,27 @@ export interface PoolCrowd {
   deposits: number;
   withdrawals: number;
   lookbackBlocks: number;
-  /** The window's oldest part is missing - counts are a floor, not a total. */
+  /** Blocks actually covered, newest first - shorter than the lookback when
+   * the scan was truncated. Counts are complete over this span. */
+  coveredBlocks: number;
+  /** The window's oldest part is missing - the span is `coveredBlocks`. */
   truncated: boolean;
 }
 
-/** Pure: how busy the pool was over a scan window. */
+/** Pure: how busy the pool was over a scan window (STRK legs only). */
 export function summarizePoolActivity(
   entries: FootprintEntry[],
   lookbackBlocks: number,
   truncated: boolean,
+  coveredBlocks = lookbackBlocks,
 ): PoolCrowd {
   let deposits = 0;
   let withdrawals = 0;
-  for (const e of entries) {
+  for (const e of strkOnly(entries)) {
     if (e.kind === "deposit") deposits++;
     else withdrawals++;
   }
-  return { deposits, withdrawals, lookbackBlocks, truncated };
+  return { deposits, withdrawals, lookbackBlocks, coveredBlocks, truncated };
 }
 
 /**
@@ -210,9 +229,12 @@ export function findUnshieldCorrelations(opts: {
   amount: bigint;
   poolFee: bigint | null;
   poolTruncated: boolean;
+  /** Blocks the pool scan covers; only the copy depends on it. */
+  coveredBlocks?: number;
 }): PrivacyWarning[] {
   const { poolEntries, ownEntries, selfAddress, currentBlock, amount, poolFee, poolTruncated } =
     opts;
+  const windowHours = hoursOf(opts.coveredBlocks ?? ACTIVITY_LOOKBACK_BLOCKS);
   const out: PrivacyWarning[] = [];
   const fmt = formatTokenAmount;
 
@@ -277,7 +299,7 @@ export function findUnshieldCorrelations(opts: {
   if (direct.length > shown.length) {
     out.push({
       severity: "medium",
-      message: `${direct.length - shown.length} more public deposit${direct.length - shown.length === 1 ? "" : "s"} by other accounts in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h also ≈ ${fmt(amount)} STRK.`,
+      message: `${direct.length - shown.length} more public deposit${direct.length - shown.length === 1 ? "" : "s"} by other accounts in the last ~${windowHours} h also ≈ ${fmt(amount)} STRK.`,
     });
   }
 
@@ -312,8 +334,8 @@ export function findUnshieldCorrelations(opts: {
         severity: "medium",
         message:
           withdrawals === 0
-            ? `The pool is quiet - no withdrawals by anyone in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h. Yours would stand alone; a busier period gives it a crowd.`
-            : `The pool is quiet - only ${withdrawals} withdrawal${withdrawals === 1 ? "" : "s"} by anyone in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h. Yours would be one of ${withdrawals + 1}; a busier period deepens the crowd.`,
+            ? `The pool is quiet - no STRK withdrawals by anyone in the last ~${windowHours} h. Yours would stand alone; a busier period gives it a crowd.`
+            : `The pool is quiet - only ${withdrawals} STRK withdrawal${withdrawals === 1 ? "" : "s"} by anyone in the last ~${windowHours} h. Yours would be one of ${withdrawals + 1}; a busier period deepens the crowd.`,
       });
     }
   } else {
@@ -344,8 +366,9 @@ export async function assessPrivacy(
       ? fetchPoolActivity({ maxLookbackBlocks: CHECK_LOOKBACK_BLOCKS }).catch(() => null)
       : Promise.resolve(null),
   ]);
+  const own = strkOnly(footprint.entries);
   const warnings = findCorrelations({
-    entries: footprint.entries,
+    entries: own,
     currentBlock,
     amounts,
     poolFee,
@@ -363,13 +386,14 @@ export async function assessPrivacy(
       for (const amount of amounts) {
         warnings.push(
           ...findUnshieldCorrelations({
-            poolEntries: pool.entries,
-            ownEntries: footprint.entries,
+            poolEntries: strkOnly(pool.entries),
+            ownEntries: own,
             selfAddress: address,
             currentBlock,
             amount,
             poolFee,
             poolTruncated: pool.truncated,
+            coveredBlocks: pool.coveredBlocks,
           }),
         );
       }
@@ -394,5 +418,15 @@ export async function assessPrivacy(
 /** Pool crowd for display - the same scan the unshield check uses. */
 export async function fetchPoolCrowd(): Promise<PoolCrowd> {
   const scan = await fetchPoolActivity({ maxLookbackBlocks: ACTIVITY_LOOKBACK_BLOCKS });
-  return summarizePoolActivity(scan.entries, ACTIVITY_LOOKBACK_BLOCKS, scan.truncated);
+  return summarizePoolActivity(
+    scan.entries,
+    ACTIVITY_LOOKBACK_BLOCKS,
+    scan.truncated,
+    scan.coveredBlocks,
+  );
+}
+
+/** Hours a crowd figure covers, for display. */
+export function crowdHours(crowd: PoolCrowd): number {
+  return hoursOf(crowd.coveredBlocks);
 }

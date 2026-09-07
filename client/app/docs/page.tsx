@@ -357,13 +357,14 @@ export default function DocsPage() {
             <li>· Whether the amount approximately echoes another account&apos;s recent public deposit, or that deposit net of pool fees.</li>
             <li>· Whether it looks like an <strong className="text-white">equal share</strong> of such a deposit - 1/2 through 1/8, net of a few fees. Recipients of a split who each unshield their exact row re-link the run from the other end.</li>
             <li>· Whether you have unshielded about this amount before. Repeated equal withdrawals form a payroll cadence.</li>
-            <li>· How busy the pool is. If few withdrawals happened in the last ~19 hours, yours has a thin crowd to hide in, and the check says so with the number.</li>
+            <li>· How busy the pool is. If few STRK withdrawals happened in the window (up to ~19 hours), yours has a thin crowd to hide in, and the check says so with the number.</li>
           </ul>
           <P>
             The Unshield panel and the dashboard both show the pool&apos;s
-            current crowd - withdrawals and deposits by anyone over the window
-            - so the figure is visible before you type an amount, not only
-            when it triggers a warning. Recency drives severity: an echo of a
+            current STRK crowd - withdrawals and deposits by anyone over the
+            window - so the figure is visible before you type an amount, not
+            only when it triggers a warning. Other tokens the pool carries are
+            ignored: an ETH deposit is not a crowd for a STRK withdrawal. Recency drives severity: an echo of a
             deposit from the last hour is high; from earlier in the day,
             medium.
           </P>

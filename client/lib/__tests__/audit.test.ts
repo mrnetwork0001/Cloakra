@@ -83,6 +83,40 @@ describe("checkReceiptStructure", () => {
     expect(checkReceiptStructure(null)).toBe(false);
     expect(checkReceiptStructure("{}")).toBe(false);
   });
+
+  it("felts are strings only - a JSON number must not pass into the UI's string paths", () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n)]);
+    expect(checkReceiptStructure({ ...r, recipient: 12345 })).toBe(false);
+    expect(checkReceiptStructure({ ...r, org: 1 })).toBe(false);
+    expect(checkReceiptStructure({ ...r, amount: 5 })).toBe(false);
+  });
+
+  it("blank or whitespace felts are malformed, not zero", () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n)]);
+    for (const k of ["txHash", "org", "salt", "recipient", "amount", "merkleRoot"] as const) {
+      expect(checkReceiptStructure({ ...r, [k]: "" })).toBe(false);
+      expect(checkReceiptStructure({ ...r, [k]: "   " })).toBe(false);
+    }
+    expect(checkReceiptStructure({ ...r, proof: [""] })).toBe(false);
+    expect(checkReceiptStructure({ ...r, signature: ["0x1", " "] })).toBe(false);
+  });
+
+  it("rejects felts at or above the field prime, so x + k*P cannot alias a recipient", () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n)]);
+    const PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
+    const alias = "0x" + (BigInt(r.recipient) + PRIME).toString(16);
+    expect(checkReceiptStructure({ ...r, recipient: alias })).toBe(false);
+    expect(checkReceiptStructure({ ...r, amount: "0x" + PRIME.toString(16) })).toBe(false);
+    expect(checkReceiptStructure({ ...r, salt: (PRIME + 5n).toString() })).toBe(false);
+  });
+
+  it("accepts a re-encoded (zero-padded, uppercase) root - the commitment is a value, not a spelling", () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    const padded = "0x" + r.merkleRoot.slice(2).padStart(64, "0").toUpperCase();
+    const re = { ...r, merkleRoot: padded };
+    expect(checkReceiptStructure(re)).toBe(true);
+    expect(checkReceiptMerkle(re)).toBe(true);
+  });
 });
 
 describe("receiptOk", () => {
@@ -200,6 +234,37 @@ describe("auditReceipts - coverage and duplicates", () => {
     expect(report.runs[0].verifiedTotal).toBe(8n * STRK);
   });
 
+  it("the same receipt resent with an edited note or respelled felts is a duplicate, not a forgery", async () => {
+    const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    const resent = { ...rs[0], note: "resent", amountDisplay: "5.0000 STRK" };
+    const respelled = { ...rs[1], recipient: "0x000" + rs[1].recipient.slice(2), amount: "0x0" + rs[1].amount.slice(2) };
+    const report = await auditReceipts(load([rs[0], rs[1], resent, respelled]), allGood);
+    expect(report.duplicatesIgnored).toBe(2);
+    expect(report.rowCount).toBe(2);
+    expect(report.runs[0].verdict).toBe("verified");
+    expect(report.runs[0].verifiedTotal).toBe(8n * STRK);
+    expect(report.runs[0].rows.every((r) => r.flags.length === 0)).toBe(true);
+  });
+
+  it("conflicting receipts for one recipient never count toward the verified figures", async () => {
+    const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
+    // A sibling that passes every check on its own (same leaf, different salt
+    // is impossible, so reuse the leaf but change an unchecked field AND the
+    // recipient spelling is normalized - so make a genuinely distinct sibling
+    // by re-preparing the same recipient in a second tree with the same root
+    // claim). Simplest genuine case: the same recipient twice via a forged
+    // amount fails Merkle; a passing sibling requires a second valid leaf.
+    // Both cases must keep the verified total honest.
+    const forged = { ...rs[0], amount: "0x" + (9n * STRK).toString(16) };
+    const report = await auditReceipts(load([rs[0], rs[1], forged]), allGood);
+    const run = report.runs[0];
+    expect(run.verdict).toBe("failed");
+    // rs[0] is in conflict with the forgery, so only rs[1] counts.
+    expect(run.verifiedRows).toBe(1);
+    expect(run.verifiedTotal).toBe(3n * STRK);
+    expect(run.claimedTotal).toBe(17n * STRK);
+  });
+
   it("two receipts naming one recipient with different amounts is a failure, not a bigger total", async () => {
     const rs = receiptsFor("StealthSplit", TX, [R(1, 5n), R(2, 3n)]);
     // A forged sibling: same recipient, different amount, proof will not verify.
@@ -210,9 +275,11 @@ describe("auditReceipts - coverage and duplicates", () => {
     expect(run.notes.some((n) => /more than one receipt/.test(n))).toBe(true);
     const flagged = run.rows.filter((r) => r.flags.length > 0);
     expect(flagged).toHaveLength(2);
-    // The forged row fails Merkle; the genuine row still verifies on its own.
+    // The forged row fails Merkle; the genuine sibling still passes its own
+    // checks but is excluded from the figures because the pair conflicts.
     expect(run.rows.find((r) => r.source === "file-3.json")?.result.merkle).toBe(false);
-    expect(run.verifiedTotal).toBe(8n * STRK);
+    expect(run.rows.find((r) => r.source === "file-1.json")?.result.ok).toBe(true);
+    expect(run.verifiedTotal).toBe(3n * STRK);
   });
 
   it("more distinct recipients than the signed count is a failure", async () => {
@@ -315,5 +382,17 @@ describe("auditReportCsv", () => {
     const forgedLine = lines.find((l) => l.includes("final"));
     expect(forgedLine).toContain('"payroll, ""final"".json"');
     expect(forgedLine).toMatch(/,false,/); // merkle failed on the forged row
+  });
+
+  it("neutralizes spreadsheet formula injection in attacker-controlled cells", async () => {
+    const rs = receiptsFor('=HYPERLINK("http://evil.example";"Verified")', TX, [R(1, 5n)]);
+    const loaded = load(rs);
+    loaded[0].source = "=cmd|' /C calc'!A0.json";
+    const report = await auditReceipts(loaded, allGood);
+    const csv = auditReportCsv(report);
+    const line = csv.trimEnd().split("\n")[1];
+    expect(line.startsWith(`"'=HYPERLINK(""http://evil.example"";""Verified"")"`)).toBe(true);
+    expect(line.endsWith(`"'=cmd|' /C calc'!A0.json"`)).toBe(true);
+    expect(line).not.toMatch(/(^|,)[=+\-@]/);
   });
 });

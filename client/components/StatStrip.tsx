@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getPoolFeeCached, getPublicStrkBalance } from "@/lib/pool";
 import { formatTokenAmount } from "@/lib/strk20";
-import { fetchPoolCrowd, type PoolCrowd } from "@/lib/privacy";
+import { crowdHours, fetchPoolCrowd, type PoolCrowd } from "@/lib/privacy";
 
 /**
  * Dashboard metrics. Every figure here is PUBLIC data read over our own RPC -
@@ -21,7 +21,7 @@ export default function StatStrip({
 }) {
   const [publicBalance, setPublicBalance] = useState<bigint | null>(null);
   const [fee, setFee] = useState<bigint | null>(null);
-  const [crowd, setCrowd] = useState<PoolCrowd | null>(null);
+  const [crowd, setCrowd] = useState<PoolCrowd | "unavailable" | null>(null);
 
   useEffect(() => {
     let stale = false;
@@ -33,7 +33,7 @@ export default function StatStrip({
       .catch(() => {});
     fetchPoolCrowd()
       .then((c) => !stale && setCrowd(c))
-      .catch(() => {});
+      .catch(() => !stale && setCrowd((prev) => (prev && prev !== "unavailable" ? prev : "unavailable")));
     return () => {
       stale = true;
     };
@@ -51,11 +51,17 @@ export default function StatStrip({
       note: "per private operation, read live",
     },
     {
-      label: "Pool crowd",
-      value: crowd
-        ? `${crowd.withdrawals}${crowd.truncated ? "+" : ""} out · ${crowd.deposits}${crowd.truncated ? "+" : ""} in`
-        : "…",
-      note: "withdrawals · deposits, all accounts, ~19 h",
+      label: "STRK pool crowd",
+      value:
+        crowd === null
+          ? "…"
+          : crowd === "unavailable"
+            ? "unreadable (RPC)"
+            : `${crowd.withdrawals} out · ${crowd.deposits} in`,
+      note:
+        crowd && crowd !== "unavailable"
+          ? `withdrawals · deposits, all accounts, last ~${crowdHours(crowd)} h`
+          : "withdrawals · deposits, all accounts",
     },
     {
       label: "Network",

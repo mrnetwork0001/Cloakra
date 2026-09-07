@@ -5,7 +5,13 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import SiteFooter from "@/components/SiteFooter";
 import AuditReportView from "@/components/AuditReportView";
-import { auditReceipts, parseReceiptBundle, type AuditReport, type LoadedReceipt } from "@/lib/audit";
+import {
+  auditReceipts,
+  parseReceiptBundle,
+  type AuditReport,
+  type LoadedReceipt,
+  type RunVerdict,
+} from "@/lib/audit";
 import type { PayoutReceipt, ReceiptVerification } from "@/lib/receipts";
 import { formatTokenAmountExact } from "@/lib/strk20";
 import { shorten, voyagerTx } from "@/lib/config";
@@ -13,7 +19,7 @@ import { shorten, voyagerTx } from "@/lib/config";
 type State =
   | { kind: "idle" }
   | { kind: "verifying"; done: number; total: number }
-  | { kind: "single"; receipt: PayoutReceipt; result: ReceiptVerification }
+  | { kind: "single"; receipt: PayoutReceipt; result: ReceiptVerification; verdict: RunVerdict }
   | { kind: "audit"; report: AuditReport }
   | { kind: "error"; message: string };
 
@@ -44,8 +50,18 @@ const TX_LABEL: Record<ReceiptVerification["transaction"], string> = {
 };
 
 /** The one-receipt view - a recipient checking their own file. */
-function SingleResult({ receipt, result }: { receipt: PayoutReceipt; result: ReceiptVerification }) {
-  const inconclusive = result.structure && result.merkle && result.signature === null;
+function SingleResult({
+  receipt,
+  result,
+  verdict,
+}: {
+  receipt: PayoutReceipt;
+  result: ReceiptVerification;
+  verdict: RunVerdict;
+}) {
+  // One verdict rule for both views: the audit already computed it, and
+  // a definite settlement failure must never read as "chain unreachable".
+  const inconclusive = verdict === "inconclusive";
   return (
     <div
       className={`rounded-xl border p-5 ${
@@ -60,7 +76,7 @@ function SingleResult({ receipt, result }: { receipt: PayoutReceipt; result: Rec
         {result.ok
           ? "Attestation verifies - the signing account stands behind this receipt"
           : inconclusive
-            ? "Inconclusive - the chain could not be reached for the signature check"
+            ? "Inconclusive - the org signature or the settlement could not be checked"
             : "Receipt does NOT verify"}
       </p>
       <ul className="mt-3 space-y-2">
@@ -141,6 +157,9 @@ export default function VerifyPage() {
   const [dragging, setDragging] = useState(false);
   const [state, setState] = useState<State>({ kind: "idle" });
   const fileInput = useRef<HTMLInputElement>(null);
+  // Latest-wins: clearing files or starting a new audit makes an in-flight
+  // one stale, so its progress and result can never paint over the newer.
+  const auditRun = useRef(0);
 
   const addFiles = useCallback(async (list: FileList | File[]) => {
     const next: LoadedReceipt[] = [];
@@ -160,6 +179,7 @@ export default function VerifyPage() {
   }, []);
 
   const clearFiles = useCallback(() => {
+    auditRun.current++;
     setFiles([]);
     setLoadErrors([]);
     setState({ kind: "idle" });
@@ -178,20 +198,30 @@ export default function VerifyPage() {
       });
       return;
     }
+    const token = ++auditRun.current;
     setState({ kind: "verifying", done: 0, total: all.length });
     try {
       const report = await auditReceipts(all, undefined, {
-        onProgress: (done, total) => setState({ kind: "verifying", done, total }),
+        onProgress: (done, total) => {
+          if (auditRun.current === token) setState({ kind: "verifying", done, total });
+        },
       });
+      if (auditRun.current !== token) return;
       const only = report.rowCount === 1 && report.runs.length === 1 ? report.runs[0].rows[0] : null;
       if (only && only.result.structure) {
-        setState({ kind: "single", receipt: only.receipt as PayoutReceipt, result: only.result });
+        setState({
+          kind: "single",
+          receipt: only.receipt as PayoutReceipt,
+          result: only.result,
+          verdict: report.runs[0].verdict,
+        });
       } else if (only) {
         setState({ kind: "error", message: "That isn't a Cloakra receipt - check the file and try again." });
       } else {
         setState({ kind: "audit", report });
       }
     } catch {
+      if (auditRun.current !== token) return;
       setState({ kind: "error", message: "Verification crashed - are these Cloakra receipt files?" });
     }
   }, [files, input]);
@@ -303,7 +333,9 @@ export default function VerifyPage() {
         ) : null}
 
         <div className="mt-8">
-          {state.kind === "single" ? <SingleResult receipt={state.receipt} result={state.result} /> : null}
+          {state.kind === "single" ? (
+            <SingleResult receipt={state.receipt} result={state.result} verdict={state.verdict} />
+          ) : null}
           {state.kind === "audit" ? <AuditReportView report={state.report} /> : null}
         </div>
 

@@ -78,6 +78,20 @@ describe("parseFootprintEvent", () => {
     ).toBeNull();
   });
 
+  it("never throws - unreadable felts, empty keys, and unknown selectors all yield null", () => {
+    expect(
+      parseFootprintEvent({ keys: [DEPOSIT, USER, TOKEN], data: ["nope"], transaction_hash: TX }),
+    ).toBeNull();
+    expect(parseFootprintEvent({ keys: [], data: [], transaction_hash: TX })).toBeNull();
+    expect(
+      parseFootprintEvent({
+        keys: [hash.getSelectorFromName("Transfer"), USER, TOKEN],
+        data: ["0x1", "0x2", "0x3", "0x4"],
+        transaction_hash: TX,
+      }),
+    ).toBeNull();
+  });
+
   it("selector matching is by felt value, not string spelling", () => {
     const padded = "0x0" + DEPOSIT.slice(2);
     const e = parseFootprintEvent({

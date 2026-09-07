@@ -13,7 +13,8 @@
  * return empty pages with a continuation token while they scan. A forward
  * scan capped by pages therefore drops the NEWEST events - so we scan
  * BACKWARD in sub-ranges from the latest block down to the pool's deployment
- * era. Newest entries are always complete; running out of budget drops only
+ * era, and a sub-range cut short by the budget is discarded whole. Newest
+ * entries are therefore always complete; running out of budget drops only
  * the oldest, which is what the UI says.
  *
  * Two readers share one scanner: the per-account footprint (keyed on the
@@ -41,6 +42,9 @@ const CHUNK_SIZE = 1000;
 export const ACTIVITY_LOOKBACK_BLOCKS = 40_000;
 const ACTIVITY_MAX_RPC_CALLS = 8;
 const ACTIVITY_CACHE_MS = 30_000;
+/** Pool-wide scans walk small newest-first slices (~2.4 h each) so a budget
+ * cut costs the oldest slices, never the newest. */
+const ACTIVITY_SUB_RANGE_BLOCKS = 5_000;
 
 export interface FootprintEntry {
   kind: "deposit" | "withdrawal";
@@ -65,6 +69,9 @@ export interface EventScan {
   skipped: number;
   /** The latest block at scan time - entries are relative to it. */
   latest: number;
+  /** Blocks completely covered, counting down from `latest`. Equals the
+   * requested window unless truncated. */
+  coveredBlocks: number;
 }
 
 /** Expected data widths; a pool upgrade that appends fields must surface as
@@ -72,48 +79,55 @@ export interface EventScan {
 const DATA_WIDTH = { deposit: 1, withdrawal: 4 } as const;
 const AMOUNT_INDEX = { deposit: 0, withdrawal: 3 } as const;
 
-/** Pure per-event parser - returns null for layout drift (unknown widths). */
+/** Pure per-event parser - returns null for anything it cannot read:
+ * layout drift (unknown widths), an unknown selector, or an unreadable felt.
+ * One odd event must never take the whole scan down. */
 export function parseFootprintEvent(ev: {
   keys: string[];
   data: string[];
   transaction_hash: string;
   block_number?: number;
 }): FootprintEntry | null {
-  const kind =
-    BigInt(ev.keys[0]) === BigInt(DEPOSIT_SELECTOR)
-      ? ("deposit" as const)
-      : ("withdrawal" as const);
-  if (ev.data.length !== DATA_WIDTH[kind]) return null;
-  if (ev.keys.length < 3) return null;
-  let account: string;
   try {
-    account = "0x" + BigInt(ev.keys[1]).toString(16);
+    if (ev.keys.length < 3) return null;
+    const selector = BigInt(ev.keys[0]);
+    const kind =
+      selector === BigInt(DEPOSIT_SELECTOR)
+        ? ("deposit" as const)
+        : selector === BigInt(WITHDRAWAL_SELECTOR)
+          ? ("withdrawal" as const)
+          : null;
+    if (kind === null) return null;
+    if (ev.data.length !== DATA_WIDTH[kind]) return null;
+    return {
+      kind,
+      account: "0x" + BigInt(ev.keys[1]).toString(16),
+      token: ev.keys[2],
+      amount: BigInt(ev.data[AMOUNT_INDEX[kind]]),
+      txHash: ev.transaction_hash,
+      blockNumber: ev.block_number ?? null,
+    };
   } catch {
     return null;
   }
-  return {
-    kind,
-    account,
-    token: ev.keys[2],
-    amount: BigInt(ev.data[AMOUNT_INDEX[kind]]),
-    txHash: ev.transaction_hash,
-    blockNumber: ev.block_number ?? null,
-  };
 }
 
 async function scanPoolEvents(opts: {
   keys: string[][];
   maxLookbackBlocks?: number;
   maxRpcCalls: number;
+  subRangeBlocks?: number;
 }): Promise<EventScan> {
   const provider = getProvider();
   const latest = await provider.getBlockNumber();
+  const subRange = opts.subRangeBlocks ?? SUB_RANGE_BLOCKS;
 
   const entries: FootprintEntry[] = [];
   let skipped = 0;
   let callsLeft = opts.maxRpcCalls;
   let hi = latest;
   let truncated = false;
+  let coveredDownTo = latest + 1;
   // A caller that only needs recent history (summaries, checks) can bound
   // the scan instead of walking back to the pool's deployment era.
   const floor = opts.maxLookbackBlocks
@@ -121,8 +135,14 @@ async function scanPoolEvents(opts: {
     : POOL_DEPLOYMENT_BLOCK;
 
   while (hi >= floor) {
-    const lo = Math.max(floor, hi - SUB_RANGE_BLOCKS + 1);
+    const lo = Math.max(floor, hi - subRange + 1);
 
+    // Pages within a sub-range arrive OLDEST first, so a sub-range cut short
+    // by the budget is missing its newest events. Buffer it and keep it only
+    // when complete - then everything returned is complete from `latest`
+    // down to `coveredDownTo`, and the loss is always the oldest part.
+    const batch: FootprintEntry[] = [];
+    let batchSkipped = 0;
     let continuationToken: string | undefined;
     do {
       if (callsLeft-- <= 0) {
@@ -142,16 +162,19 @@ async function scanPoolEvents(opts: {
         const parsed = parseFootprintEvent(ev);
         if (parsed === null) {
           // Layout drift (pool upgrade?) - omit rather than show wrong numbers.
-          skipped++;
-          console.warn("[cloakra] unexpected event layout:", ev.keys.length, ev.data.length);
+          batchSkipped++;
+          console.warn("[cloakra] unreadable pool event:", ev.keys.length, ev.data.length);
           continue;
         }
-        entries.push(parsed);
+        batch.push(parsed);
       }
       continuationToken = page.continuation_token;
     } while (continuationToken);
 
     if (truncated) break;
+    entries.push(...batch);
+    skipped += batchSkipped;
+    coveredDownTo = lo;
     hi = lo - 1;
   }
 
@@ -160,7 +183,7 @@ async function scanPoolEvents(opts: {
       (b.blockNumber ?? Number.MAX_SAFE_INTEGER) -
       (a.blockNumber ?? Number.MAX_SAFE_INTEGER),
   );
-  return { entries, truncated, skipped, latest };
+  return { entries, truncated, skipped, latest, coveredBlocks: latest + 1 - coveredDownTo };
 }
 
 /** One account's public legs. */
@@ -205,6 +228,7 @@ export function fetchPoolActivity(options?: {
     keys: [[DEPOSIT_SELECTOR, WITHDRAWAL_SELECTOR]],
     maxLookbackBlocks: lookback,
     maxRpcCalls: ACTIVITY_MAX_RPC_CALLS,
+    subRangeBlocks: ACTIVITY_SUB_RANGE_BLOCKS,
   });
   activityCache = { at: now, lookback, promise };
   // A failed scan must not be served from cache for 30 seconds.

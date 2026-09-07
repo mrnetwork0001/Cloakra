@@ -91,7 +91,9 @@ function RunCard({ run }: { run: AuditRun }) {
           </dd>
         </div>
         <div>
-          <dt className="text-[11px] tracking-[0.15em] text-white/35 uppercase">Verified total</dt>
+          <dt className="text-[11px] tracking-[0.15em] text-white/35 uppercase">
+            {run.verdict === "failed" ? "Rows passing alone" : "Verified total"}
+          </dt>
           <dd className="mt-0.5 text-white">{strk(run.verifiedTotal)}</dd>
           {run.claimedTotal !== run.verifiedTotal ? (
             <dd className="text-xs text-white/40">files claim {strk(run.claimedTotal)}</dd>
@@ -183,9 +185,11 @@ function RunCard({ run }: { run: AuditRun }) {
 
 /** The auditor's desk: every run in the bundle, verified and totalled. */
 export default function AuditReportView({ report }: { report: AuditReport }) {
+  // Header figures count only runs that verify - a failed run's individually
+  // passing rows are shown on its own card, never rolled into a headline.
   const verifiedRuns = report.runs.filter((r) => r.verdict === "verified" || r.verdict === "partial");
-  const grandTotal = report.runs.reduce((acc, r) => acc + r.verifiedTotal, 0n);
-  const verifiedRows = report.runs.reduce((acc, r) => acc + r.verifiedRows, 0);
+  const grandTotal = verifiedRuns.reduce((acc, r) => acc + r.verifiedTotal, 0n);
+  const verifiedRows = verifiedRuns.reduce((acc, r) => acc + r.verifiedRows, 0);
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
