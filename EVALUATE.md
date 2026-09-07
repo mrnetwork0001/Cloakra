@@ -6,7 +6,7 @@ required. The live deployment is linked from the sprint hub.
 ## 1. The mainnet proof (60 seconds)
 
 Open the live app's landing page and scroll to **Submission proof**. The
-three transactions recorded in [`strk20.json`](strk20.json) are verified
+seven transactions recorded in [`strk20.json`](strk20.json) are verified
 against Starknet **in your browser as you watch** - finality AND execution
 status. Green means `ACCEPTED · SUCCEEDED`. This panel can fail (a fabricated
 hash renders a red "NOT FOUND"), which is what makes its passing meaningful.
@@ -18,6 +18,10 @@ Prefer your own tooling? The hashes, on Voyager:
 | Shield 26 STRK | [`0xcfc2e5…`](https://voyager.online/tx/0xcfc2e5fe5e2d5b56c7ba0c7300700b54269db0ac47b2d2a5c4b4bb7b6b1b93) |
 | Unshield 2 STRK | [`0x3f4819…`](https://voyager.online/tx/0x3f4819ae9bf1db30cf6dca75128bfe7b68d767f25249705e8a3d77aff1a3900) |
 | Unshield 2 STRK | [`0x39ca2e…`](https://voyager.online/tx/0x39ca2ea1b07036a2cc30931fd0c23139fc54134529000b945b94d8a18b82463) |
+| Shield 12 STRK | [`0x14c41d…`](https://voyager.online/tx/0x14c41ddaa5e660b7a89d3ae3dbbe236659d964e544654cb97bb0830ab59aada) |
+| Shield 12 STRK | [`0x65748c…`](https://voyager.online/tx/0x65748c3960b0cb5988f29df38d639e33a060797d46043c636ed4f10b94ca58c) |
+| Unshield 2 STRK | [`0x4a216f…`](https://voyager.online/tx/0x4a216f67144a4275e6b0f5ba8a4903bbecc7565bbb9fe69c7183e37e98305e6) |
+| Unshield 2 STRK | [`0xfc4383…`](https://voyager.online/tx/0xfc4383141cfe4a4b10e02298ee3aae7d9cafbfff8d2c83f4877d131ef212ce) |
 
 Or run the repo's own gate (public RPC fallback included):
 `node scripts/verify-tx.mjs <hash>` - requires `ACCEPTED` + `SUCCEEDED` +

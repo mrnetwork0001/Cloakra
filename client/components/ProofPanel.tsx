@@ -16,11 +16,15 @@ interface HashStatus {
 
 /**
  * Verifies the submission's own mainnet hashes live in the viewer's browser -
- * finality AND execution status straight from a Starknet node. The claim
- * "three mainnet transactions" is checked against the chain on every load,
- * not asserted by copy.
+ * finality AND execution status straight from a Starknet node. Every hash is
+ * checked against the chain on every load, not asserted by copy. The first
+ * four show by default; the rest sit behind a toggle so the section stays
+ * scannable as the list grows.
  */
+const SHOWN = 4;
+
 export default function ProofPanel() {
+  const [showAll, setShowAll] = useState(false);
   const [statuses, setStatuses] = useState<HashStatus[]>(() =>
     strk20.transactions.map((txHash) => ({ txHash, state: "checking" })),
   );
@@ -84,7 +88,7 @@ export default function ProofPanel() {
         Starknet in your browser right now, not claimed.
       </p>
       <ul className="mt-4 space-y-px overflow-hidden rounded-xl border border-white/10">
-        {statuses.map((h) => (
+        {(showAll ? statuses : statuses.slice(0, SHOWN)).map((h) => (
           <li
             key={h.txHash}
             className="flex items-center justify-between gap-3 bg-white/[0.02] px-4 py-3"
@@ -124,6 +128,17 @@ export default function ProofPanel() {
           </li>
         ))}
       </ul>
+      {statuses.length > SHOWN ? (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-3 text-sm text-white/50 underline-offset-4 transition hover:text-white hover:underline"
+        >
+          {showAll
+            ? "Show fewer"
+            : `Show ${statuses.length - SHOWN} more verified transaction${statuses.length - SHOWN === 1 ? "" : "s"}`}
+        </button>
+      ) : null}
     </section>
   );
 }

@@ -469,7 +469,7 @@ export default function DocsPage() {
 
           <H id="mainnet">Mainnet transactions</H>
           <P>
-            Cloakra&apos;s submission records three mainnet transactions, all
+            Cloakra&apos;s submission records seven mainnet transactions, all
             accepted on L1 with successful execution and confirmed to have
             emitted STRK20 pool events. The landing page re-verifies them
             against Starknet in your own browser on every visit - a fabricated

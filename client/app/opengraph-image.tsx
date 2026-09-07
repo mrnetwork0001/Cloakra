@@ -71,7 +71,7 @@ export default async function OpengraphImage() {
 
         <div style={{ display: "flex", gap: 14 }}>
           {[
-            "3 verified mainnet txs",
+            "7 verified mainnet txs",
             "0 custom contracts",
             "wallet-signed, no server keys",
           ].map((chip) => (
