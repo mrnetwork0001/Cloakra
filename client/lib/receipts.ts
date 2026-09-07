@@ -212,39 +212,62 @@ export interface ReceiptVerification {
   ok: boolean;
 }
 
-/** Full public verification - pure math plus two public RPC reads. */
-export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVerification> {
-  const result: ReceiptVerification = {
-    structure: false,
-    merkle: false,
-    signature: null,
-    transaction: "UNKNOWN",
-    ok: false,
-  };
+const isFelt = (v: unknown): boolean => {
+  if (typeof v !== "string" && typeof v !== "number") return false;
   try {
-    if (receipt.format !== "cloakra-receipt-v1") return result;
-    BigInt(receipt.recipient);
-    BigInt(receipt.amount);
-    BigInt(receipt.salt);
-    BigInt(receipt.merkleRoot);
-    // Stored chain/pool must be the ones the verifier rebuilds the signed
-    // message with - otherwise they are decorative fields inviting false
-    // assurance.
-    if (BigInt(receipt.chainId) !== BigInt(DOMAIN.chainId)) return result;
-    if (BigInt(receipt.pool) !== BigInt(STRK20_POOL_ADDRESS)) return result;
-    result.structure = true;
+    return BigInt(v) >= 0n;
   } catch {
-    return result;
+    return false;
   }
+};
 
-  const leaf = computeLeaf(receipt.recipient, BigInt(receipt.amount), receipt.salt);
-  result.merkle = merkle.proofMerklePath(
-    receipt.merkleRoot,
-    leaf,
-    receipt.proof,
-    hash.computePoseidonHash,
-  );
+/**
+ * Pure: is this a well-formed cloakra-receipt-v1 whose chain and pool are
+ * the ones the verifier rebuilds the signed message with? Stored chain/pool
+ * that were not checked would be decorative fields inviting false assurance.
+ * A malformed proof or signature is a STRUCTURE failure, not an
+ * "inconclusive" chain read.
+ */
+export function checkReceiptStructure(receipt: unknown): receipt is PayoutReceipt {
+  if (typeof receipt !== "object" || receipt === null) return false;
+  const r = receipt as Record<string, unknown>;
+  if (r.format !== "cloakra-receipt-v1") return false;
+  if (typeof r.operation !== "string" || r.operation.length === 0) return false;
+  if (!isFelt(r.recipient) || !isFelt(r.amount) || !isFelt(r.salt)) return false;
+  if (!isFelt(r.merkleRoot) || !isFelt(r.txHash) || !isFelt(r.org)) return false;
+  if (!isFelt(r.chainId) || !isFelt(r.pool)) return false;
+  if (
+    typeof r.recipientCount !== "number" ||
+    !Number.isInteger(r.recipientCount) ||
+    r.recipientCount < 1
+  )
+    return false;
+  if (!Array.isArray(r.proof) || !r.proof.every(isFelt)) return false;
+  if (!Array.isArray(r.signature) || r.signature.length < 1 || !r.signature.every(isFelt))
+    return false;
+  if (BigInt(r.chainId as string) !== BigInt(DOMAIN.chainId)) return false;
+  if (BigInt(r.pool as string) !== BigInt(STRK20_POOL_ADDRESS)) return false;
+  return true;
+}
 
+/** Pure: the recipient + amount sit inside the signed commitment. */
+export function checkReceiptMerkle(receipt: PayoutReceipt): boolean {
+  try {
+    const leaf = computeLeaf(receipt.recipient, BigInt(receipt.amount), receipt.salt);
+    return merkle.proofMerklePath(
+      receipt.merkleRoot,
+      leaf,
+      receipt.proof,
+      hash.computePoseidonHash,
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** One public RPC read: did the org account sign this run? null = the chain
+ * could not be reached, which is NOT a pass. */
+export async function checkRunSignature(receipt: PayoutReceipt): Promise<boolean | null> {
   const typedData = buildRunTypedData(
     receipt.operation,
     receipt.txHash,
@@ -253,23 +276,27 @@ export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVeri
     receipt.merkleRoot,
   );
   try {
-    result.signature = await verifyMessageInStarknet(
+    return await verifyMessageInStarknet(
       getProvider(),
       typedData,
       receipt.signature,
       receipt.org,
     );
   } catch {
-    result.signature = null;
+    return null;
   }
+}
 
+/** One public RPC read: did the referenced transaction settle, and did it
+ * touch the pool? A random successful tx must not lend credibility to an
+ * attestation. (What the shielded tx DID remains private by design - this
+ * only proves it was a pool transaction.) */
+export async function checkSettlement(
+  txHash: string,
+): Promise<ReceiptVerification["transaction"]> {
   try {
-    const receiptTx = await getProvider().getTransactionReceipt(receipt.txHash);
+    const receiptTx = await getProvider().getTransactionReceipt(txHash);
     if (receiptTx.isSuccess()) {
-      // A random successful tx must not lend credibility to an attestation:
-      // require the settlement to have emitted STRK20 pool events. (What the
-      // shielded tx DID remains private by design - this only proves it was
-      // a pool transaction.)
       const events =
         (receiptTx as unknown as { events?: { from_address?: string }[] })
           .events ?? [];
@@ -280,22 +307,44 @@ export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVeri
           return false;
         }
       });
-      result.transaction = touchedPool ? "SUCCEEDED_POOL" : "SUCCEEDED_NOT_POOL";
-    } else if (receiptTx.isReverted()) {
-      result.transaction = "REVERTED";
+      return touchedPool ? "SUCCEEDED_POOL" : "SUCCEEDED_NOT_POOL";
     }
+    if (receiptTx.isReverted()) return "REVERTED";
+    return "UNKNOWN";
   } catch (err) {
-    result.transaction =
-      err instanceof RpcError && err.isType("TXN_HASH_NOT_FOUND")
-        ? "NOT_FOUND"
-        : "UNKNOWN";
+    return err instanceof RpcError && err.isType("TXN_HASH_NOT_FOUND")
+      ? "NOT_FOUND"
+      : "UNKNOWN";
   }
+}
 
-  result.ok =
-    result.structure &&
-    result.merkle &&
-    result.signature === true &&
-    result.transaction === "SUCCEEDED_POOL";
+/** Pure: the verdict rule, shared by single and batch verification. */
+export function receiptOk(r: Omit<ReceiptVerification, "ok">): boolean {
+  return (
+    r.structure &&
+    r.merkle &&
+    r.signature === true &&
+    r.transaction === "SUCCEEDED_POOL"
+  );
+}
+
+/** Full public verification - pure math plus two public RPC reads. */
+export async function verifyReceipt(receipt: PayoutReceipt): Promise<ReceiptVerification> {
+  const result: ReceiptVerification = {
+    structure: false,
+    merkle: false,
+    signature: null,
+    transaction: "UNKNOWN",
+    ok: false,
+  };
+  if (!checkReceiptStructure(receipt)) return result;
+  result.structure = true;
+  result.merkle = checkReceiptMerkle(receipt);
+  [result.signature, result.transaction] = await Promise.all([
+    checkRunSignature(receipt),
+    checkSettlement(receipt.txHash),
+  ]);
+  result.ok = receiptOk(result);
   return result;
 }
 
