@@ -231,25 +231,37 @@ const isFelt = (v: unknown): boolean =>
  * "inconclusive" chain read.
  */
 export function checkReceiptStructure(receipt: unknown): receipt is PayoutReceipt {
-  if (typeof receipt !== "object" || receipt === null) return false;
+  return describeReceiptProblem(receipt) === null;
+}
+
+/**
+ * Why a file is not a well-formed receipt, in one line - or null when it
+ * is. An auditor handed a rejected file needs the reason, not a shrug.
+ */
+export function describeReceiptProblem(receipt: unknown): string | null {
+  if (typeof receipt !== "object" || receipt === null) return "not a JSON object";
   const r = receipt as Record<string, unknown>;
-  if (r.format !== "cloakra-receipt-v1") return false;
-  if (typeof r.operation !== "string" || r.operation.length === 0) return false;
-  if (!isFelt(r.recipient) || !isFelt(r.amount) || !isFelt(r.salt)) return false;
-  if (!isFelt(r.merkleRoot) || !isFelt(r.txHash) || !isFelt(r.org)) return false;
-  if (!isFelt(r.chainId) || !isFelt(r.pool)) return false;
+  if (r.format !== "cloakra-receipt-v1") return "format is not cloakra-receipt-v1";
+  if (typeof r.operation !== "string" || r.operation.length === 0) return "operation is missing";
+  for (const k of ["recipient", "amount", "salt", "merkleRoot", "txHash", "org", "chainId", "pool"] as const) {
+    if (!isFelt(r[k])) {
+      return typeof r[k] === "string" && /^0x[0-9a-fA-F]+$/.test(r[k] as string)
+        ? `${k} is not below the Stark field prime (too many hex digits?)`
+        : `${k} is not a felt (expected a 0x-hex or decimal string)`;
+    }
+  }
   if (
     typeof r.recipientCount !== "number" ||
     !Number.isInteger(r.recipientCount) ||
     r.recipientCount < 1
   )
-    return false;
-  if (!Array.isArray(r.proof) || !r.proof.every(isFelt)) return false;
+    return "recipientCount is not a positive integer";
+  if (!Array.isArray(r.proof) || !r.proof.every(isFelt)) return "proof is not a list of felts";
   if (!Array.isArray(r.signature) || r.signature.length < 1 || !r.signature.every(isFelt))
-    return false;
-  if (BigInt(r.chainId as string) !== BigInt(DOMAIN.chainId)) return false;
-  if (BigInt(r.pool as string) !== BigInt(STRK20_POOL_ADDRESS)) return false;
-  return true;
+    return "signature is not a list of felts";
+  if (BigInt(r.chainId as string) !== BigInt(DOMAIN.chainId)) return "chainId is not Starknet mainnet";
+  if (BigInt(r.pool as string) !== BigInt(STRK20_POOL_ADDRESS)) return "pool is not the STRK20 pool";
+  return null;
 }
 
 /** Pure: the recipient + amount sit inside the signed commitment. */

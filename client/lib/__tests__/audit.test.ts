@@ -9,6 +9,7 @@ import {
 import {
   checkReceiptMerkle,
   checkReceiptStructure,
+  describeReceiptProblem,
   prepareRun,
   receiptOk,
   type PayoutReceipt,
@@ -99,6 +100,21 @@ describe("checkReceiptStructure", () => {
     }
     expect(checkReceiptStructure({ ...r, proof: [""] })).toBe(false);
     expect(checkReceiptStructure({ ...r, signature: ["0x1", " "] })).toBe(false);
+  });
+
+  it("explains why a file is malformed", () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n)]);
+    expect(describeReceiptProblem(r)).toBeNull();
+    expect(describeReceiptProblem({ ...r, recipient: "0x" + "1".repeat(64) })).toMatch(/recipient.*field prime/);
+    expect(describeReceiptProblem({ ...r, amount: 5 })).toMatch(/amount is not a felt/);
+    expect(describeReceiptProblem({ ...r, pool: "0x1" })).toMatch(/pool/);
+    expect(describeReceiptProblem("junk")).toMatch(/not a JSON object/);
+  });
+
+  it("a malformed row in an audit carries the reason as a flag", async () => {
+    const [r] = receiptsFor("StealthSplit", TX, [R(1, 5n)]);
+    const report = await auditReceipts(load([{ ...r, recipient: "0x" + "1".repeat(64) }]), allGood);
+    expect(report.runs[0].rows[0].flags[0]).toMatch(/Not a well-formed receipt: recipient/);
   });
 
   it("rejects felts at or above the field prime, so x + k*P cannot alias a recipient", () => {

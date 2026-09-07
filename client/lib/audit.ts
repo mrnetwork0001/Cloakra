@@ -18,6 +18,7 @@
 import {
   checkReceiptMerkle,
   checkReceiptStructure,
+  describeReceiptProblem,
   checkRunSignature,
   checkSettlement,
   receiptOk,
@@ -276,6 +277,9 @@ export async function auditReceipts(
       };
       let amount: bigint | null = null;
       let recipient = typeof rec.recipient === "string" ? rec.recipient : "";
+      const flags: string[] = [];
+      const problem = describeReceiptProblem(receipt);
+      if (problem !== null) flags.push(`Not a well-formed receipt: ${problem}.`);
 
       if (checkReceiptStructure(receipt)) {
         result.structure = true;
@@ -299,7 +303,7 @@ export async function auditReceipts(
         result.ok = receiptOk(result);
       }
       tick();
-      return { key, source, receipt: rec, result, amount, recipient, flags: [], counted: false };
+      return { key, source, receipt: rec, result, amount, recipient, flags, counted: false };
     }),
   );
 
