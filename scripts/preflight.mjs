@@ -17,8 +17,8 @@ const demoUrlArg = (() => {
 })();
 const POOL = 0x040337b1af3c663e86e333bab5a4b28da8d4652a15a69beee2b677776ffe812an;
 const PUBLIC_RPCS = [
-  "https://rpc.starknet.lava.build",
-  "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/demo",
+  "https://starknet-rpc.publicnode.com",
+  "https://api.zan.top/public/starknet-mainnet",
 ];
 
 const results = [];
@@ -126,11 +126,14 @@ if (demoUrlArg) {
   try {
     const res = await fetch(demoUrlArg, { redirect: "follow" });
     const body = await res.text();
-    // Vercel's protection wall answers 401/403, or serves an SSO interstitial.
+    // Vercel's protection wall answers 401/403, or serves its SSO
+    // interstitial. Match that page's own markers tightly: minified HTML is
+    // one huge line, so a greedy vercel.*sso scan false-positives on the
+    // auto-generated og:url meta plus any later "sso" substring.
     const walled =
       res.status === 401 ||
       res.status === 403 ||
-      /vercel.*(authentication|sso)|_vercel\/sso/i.test(body);
+      /_vercel\/sso-api|vercel\.com\/sso|Authentication Required/i.test(body);
     record(
       "demo URL is publicly reachable (deployment protection OFF)",
       res.ok && !walled,

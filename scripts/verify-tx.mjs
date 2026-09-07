@@ -17,8 +17,8 @@ if (!hash || !/^0x[0-9a-fA-F]+$/.test(hash)) {
 // key hygiene, but it blocks CLI use. Tx status is public data, so fall back
 // to public endpoints when the env key is absent or rejects us.
 const PUBLIC_RPCS = [
-  "https://rpc.starknet.lava.build",
-  "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/demo",
+  "https://starknet-rpc.publicnode.com",
+  "https://api.zan.top/public/starknet-mainnet",
 ];
 
 const envPath = join(dirname(fileURLToPath(import.meta.url)), "..", "client", ".env.local");
