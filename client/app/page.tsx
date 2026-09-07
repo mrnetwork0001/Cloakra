@@ -88,6 +88,14 @@ const PROPERTIES = [
     title: "Proof, not promises",
     text: "The mainnet transactions in our submission file are re-verified against Starknet in your browser. A fabricated hash renders a red NOT FOUND.",
   },
+  {
+    title: "Receipts an auditor can total",
+    text: "One signature per run commits every recipient and amount; each recipient gets only their own row. Drop a whole run on /verify and it verifies each row, totals what passes, and reports coverage.",
+  },
+  {
+    title: "Honest on both ends",
+    text: "Payers are warned when an amount echoes their own deposits. Recipients are warned when an unshield echoes another account's deposit, looks like an equal share of one, or lands in a quiet pool.",
+  },
 ] as const;
 
 const AUDIENCES = [
@@ -119,6 +127,14 @@ const FAQ = [
   {
     q: "Can Cloakra read my shielded balance?",
     a: "Only through your wallet, only when you press the button, and only after the wallet's own consent prompt. Capability detection is a version query - the app never reads wallet data to feature-detect.",
+  },
+  {
+    q: "How does an accountant audit a private payroll?",
+    a: "With receipts. After a run settles, the paying account signs one statement committing to every recipient and amount; each recipient gets a file carrying only their own row. Drop a whole run's receipts on /verify and it verifies every row, checks the signature and settlement once, totals what passes, and reports coverage - receipts present against the count the org signed. It proves the attestation, never the shielded transfer itself.",
+  },
+  {
+    q: "When is it safe for a recipient to unshield?",
+    a: "Not right away, and not the exact row. Before an unshield opens the wallet, Cloakra reads the pool's recent public activity by every account and warns if the amount echoes another account's deposit, looks like an equal share of one, repeats your own earlier withdrawals, or lands in a quiet pool with a thin crowd. The pool's current crowd is shown on the dashboard so you can see it before you type an amount.",
   },
   {
     q: "Why should I believe any of this?",

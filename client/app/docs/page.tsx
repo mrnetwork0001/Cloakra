@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import PageHeader from "@/components/PageHeader";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
@@ -35,6 +35,7 @@ const NAV = [
     items: [
       { id: "model", label: "What's private" },
       { id: "warnings", label: "Privacy warnings" },
+      { id: "unshield", label: "Safe to unshield?" },
     ],
   },
   {
@@ -42,6 +43,7 @@ const NAV = [
     items: [
       { id: "receipts", label: "Signed receipts" },
       { id: "verifying", label: "Verifying a receipt" },
+      { id: "auditing", label: "Auditing a run" },
     ],
   },
   {
@@ -120,25 +122,7 @@ function NavList() {
 export default function DocsPage() {
   return (
     <>
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-black/80 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2 md:px-10">
-          <Link href="/" className="flex items-center" aria-label="Cloakra home">
-            <Image
-              src="/cloakra-header.png"
-              alt="Cloakra"
-              width={1923}
-              height={818}
-              priority
-              className="h-16 w-auto"
-            />
-          </Link>
-          <div className="flex items-center gap-6 font-mono text-xs tracking-[0.15em] text-white/45 uppercase">
-            <Link className="transition hover:text-white" href="/app">App</Link>
-            <Link className="transition hover:text-white" href="/verify">Verify</Link>
-            <a className="transition hover:text-white" href={REPO} target="_blank" rel="noreferrer">GitHub</a>
-          </div>
-        </nav>
-      </header>
+      <PageHeader current="docs" />
 
       <main className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:px-10 lg:grid-cols-[220px_1fr]">
         {/* Contents: a closed disclosure on small screens so the docs start
@@ -359,6 +343,39 @@ export default function DocsPage() {
             recipient side, longer history, or patterns across accounts.
           </Callout>
 
+          <H id="unshield">Safe to unshield?</H>
+          <P>
+            The payer check above looks at your own deposits. A recipient
+            unshielding a payout faces the mirror-image risk: the chain shows
+            some organization&apos;s deposit going in and, later, your
+            withdrawal coming out - and if the two amounts rhyme, an observer
+            pairs them without needing anything private. So before an
+            unshield opens the wallet, Cloakra also reads the pool&apos;s recent
+            public activity by <em>every</em> account and checks:
+          </P>
+          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white/60">
+            <li>· Whether the amount approximately echoes another account&apos;s recent public deposit, or that deposit net of pool fees.</li>
+            <li>· Whether it looks like an <strong className="text-white">equal share</strong> of such a deposit - 1/2 through 1/8, net of a few fees. Recipients of a split who each unshield their exact row re-link the run from the other end.</li>
+            <li>· Whether you have unshielded about this amount before. Repeated equal withdrawals form a payroll cadence.</li>
+            <li>· How busy the pool is. If few withdrawals happened in the last ~19 hours, yours has a thin crowd to hide in, and the check says so with the number.</li>
+          </ul>
+          <P>
+            The Unshield panel and the dashboard both show the pool&apos;s
+            current crowd - withdrawals and deposits by anyone over the window
+            - so the figure is visible before you type an amount, not only
+            when it triggers a warning. Recency drives severity: an echo of a
+            deposit from the last hour is high; from earlier in the day,
+            medium.
+          </P>
+          <Callout>
+            This is still a bounded check. It sees roughly the last day of
+            public pool activity, one account&apos;s history, and amount shapes
+            an observer would try first. It cannot see longer history, patterns
+            across many accounts, or what anyone does off this chain. The
+            practical advice is unchanged: wait, and do not withdraw your
+            exact row.
+          </Callout>
+
           <H id="receipts">Signed payout receipts</H>
           <P>
             A shielded payout is private, which makes it awkward to prove. After
@@ -399,6 +416,40 @@ export default function DocsPage() {
             the file&apos;s human-readable field, so a receipt cannot be edited
             to show a different number under a passing check.
           </P>
+
+          <H id="auditing">Auditing a run</H>
+          <P>
+            A recipient holds one receipt. An auditor holds a folder of them
+            and one question: did this organization pay what it claims? Drop
+            every receipt from a run onto <Link className="text-white/80 underline underline-offset-4 hover:text-white" href="/verify">/verify</Link> -
+            files, a JSON list, or one receipt per line - and the page becomes
+            the auditor&apos;s desk:
+          </P>
+          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white/60">
+            <li>· Every receipt is verified with the same four checks, and grouped by the run its signed fields describe.</li>
+            <li>· The org&apos;s signature and the settlement are checked <em>once</em> per run, however many receipts share them.</li>
+            <li>· Each run reports <strong className="text-white">coverage</strong> - receipts present against the recipient count the org signed - and the <strong className="text-white">verified total</strong>, summed only over rows that pass.</li>
+            <li>· Anomalies an honest run cannot produce are called out: two receipts naming one recipient, more recipients than the signed count, two attestations for the same settlement transaction.</li>
+            <li>· The result downloads as a CSV, one line per receipt, with exact amounts.</li>
+          </ul>
+          <P>
+            Verdicts are deliberately narrow. <em>Verified</em> means every
+            supplied receipt passes and the run is fully covered. <em>Partial
+            coverage</em> means every supplied receipt passes but some are
+            missing - the total covers only those present, and a missing
+            receipt is a gap in the audit, not evidence of anything.{" "}
+            <em>Inconclusive</em> means the chain could not be reached for a
+            check; nothing is presumed. <em>Does not verify</em> means at least
+            one row failed a check the receipt scheme can actually make.
+          </P>
+          <Callout>
+            An audit inherits the receipt scheme&apos;s limit: it establishes
+            what the org <em>attested</em>, and that the attested settlement
+            really happened in the pool. The shielded transfers inside that
+            settlement stay private by design. An auditor who needs more than
+            the org&apos;s signed word needs a viewing key, which no dapp -
+            Cloakra included - is allowed to hold.
+          </Callout>
 
           <H id="fees">Fees &amp; registration</H>
           <P>
@@ -462,7 +513,7 @@ export default function DocsPage() {
             <li>· Wallet support is narrow: Ready today, Xverse in progress. Other wallets connect but stay read-only.</li>
             <li>· Recipients must register in the pool themselves, and that registration costs them 6 STRK.</li>
             <li>· Receipts prove attestation, not transfer - see above.</li>
-            <li>· The privacy check is bounded to your own recent public legs and cannot see the recipient side.</li>
+            <li>· The privacy checks are bounded to roughly a day of public pool activity and amount shapes an observer would try first; they cannot see longer history or off-chain context.</li>
             <li>· Shielded balances below the pool fee are effectively stranded until the balance is topped up.</li>
             <li>· The treasury legs are hash-proven on mainnet; the private transfer and split flows ride the same wallet API against the same pool but are not yet exercised by a recorded hash.</li>
           </ul>
