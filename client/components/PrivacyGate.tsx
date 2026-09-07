@@ -96,10 +96,11 @@ export function PrivacyWarnings({
       </ul>
       <p className="mt-2 text-xs text-amber-200/60">
         A bounded check, not a privacy analysis: it compares approximate
-        amounts and timing against your own public legs from the last ~day.
-        Longer history, other patterns, and what recipients do after cashing
-        out are outside it. Small tweaks to the amount do <strong>not</strong>{" "}
-        help - observers match approximately too. Waiting longer does.
+        amounts and timing against public pool legs from the last ~day - your
+        own, and for an unshield, other accounts&apos; deposits and the
+        pool&apos;s crowd. Longer history and patterns across accounts are
+        outside it. Small tweaks to the amount do <strong>not</strong> help -
+        observers match approximately too. Waiting longer does.
       </p>
       <div className="mt-3 flex gap-2">
         <button

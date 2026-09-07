@@ -13,7 +13,7 @@ import {
   walletErrorMessage,
   type PanelPhase,
 } from "@/lib/strk20";
-import { usePoolFee } from "@/lib/hooks";
+import { usePoolCrowd, usePoolFee } from "@/lib/hooks";
 import { COPY } from "@/lib/copy";
 import TxOutcome from "./TxOutcome";
 import { usePrivacyGate, PrivacyWarnings } from "./PrivacyGate";
@@ -32,6 +32,7 @@ export default function WithdrawPanel({
   const [amount, setAmount] = useState("");
   const [phase, setPhase] = useState<PanelPhase>({ kind: "form" });
   const fee = usePoolFee(phase.kind === "form" || phase.kind === "error");
+  const crowd = usePoolCrowd(phase.kind === "form" || phase.kind === "error");
   const gate = usePrivacyGate(address);
 
   const onBack = useCallback(() => {
@@ -111,8 +112,10 @@ export default function WithdrawPanel({
         Withdraws shielded STRK back to a public address.{" "}
         <strong className="text-white/70">This leg is public</strong> - the
         recipient and amount appear onchain. No onchain record names the
-        depositing org, but timing and amounts are public too: unshielding a
-        matching amount right after a shield is trivially correlatable.
+        depositing org, but timing and amounts are public too. Before the
+        wallet opens, Cloakra checks this amount against other accounts&apos;
+        recent public deposits (including equal-share shapes), your own
+        withdrawal cadence, and how busy the pool is - and warns you.
       </p>
 
       <div className="mt-4 space-y-2">
@@ -156,10 +159,18 @@ export default function WithdrawPanel({
         />
       </div>
 
-      <dl className="mt-3 text-sm text-white/50">
+      <dl className="mt-3 space-y-1 text-sm text-white/50">
         <div className="flex justify-between">
           <dt>Pool fee (re-checked in wallet)</dt>
           <dd>{fee !== null ? `${formatTokenAmount(fee)} STRK` : "…"}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt>Pool crowd, last ~19 h (all accounts)</dt>
+          <dd className="text-right">
+            {crowd
+              ? `${crowd.withdrawals}${crowd.truncated ? "+" : ""} withdrawal${crowd.withdrawals === 1 && !crowd.truncated ? "" : "s"} · ${crowd.deposits}${crowd.truncated ? "+" : ""} deposit${crowd.deposits === 1 && !crowd.truncated ? "" : "s"}`
+              : "…"}
+          </dd>
         </div>
       </dl>
 

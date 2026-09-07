@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { getPoolFeeCached, getPublicStrkBalance } from "@/lib/pool";
 import { formatTokenAmount } from "@/lib/strk20";
-import { shorten } from "@/lib/config";
+import { fetchPoolCrowd, type PoolCrowd } from "@/lib/privacy";
 
 /**
  * Dashboard metrics. Every figure here is PUBLIC data read over our own RPC -
  * no wallet involvement and no consent prompt. The shielded balance is
- * deliberately absent: it is consent-gated and lives in its own tile.
+ * deliberately absent: it is consent-gated and lives in its own tile. The
+ * account itself is in the header chip, so the fourth tile carries the
+ * pool's crowd - the figure a withdrawal's privacy actually depends on.
  */
 export default function StatStrip({
   address,
@@ -19,6 +21,7 @@ export default function StatStrip({
 }) {
   const [publicBalance, setPublicBalance] = useState<bigint | null>(null);
   const [fee, setFee] = useState<bigint | null>(null);
+  const [crowd, setCrowd] = useState<PoolCrowd | null>(null);
 
   useEffect(() => {
     let stale = false;
@@ -27,6 +30,9 @@ export default function StatStrip({
       .catch(() => {});
     getPoolFeeCached()
       .then((f) => !stale && setFee(f))
+      .catch(() => {});
+    fetchPoolCrowd()
+      .then((c) => !stale && setCrowd(c))
       .catch(() => {});
     return () => {
       stale = true;
@@ -45,10 +51,11 @@ export default function StatStrip({
       note: "per private operation, read live",
     },
     {
-      label: "Account",
-      value: shorten(address, 6, 4),
-      note: "signing wallet",
-      mono: true,
+      label: "Pool crowd",
+      value: crowd
+        ? `${crowd.withdrawals}${crowd.truncated ? "+" : ""} out · ${crowd.deposits}${crowd.truncated ? "+" : ""} in`
+        : "…",
+      note: "withdrawals · deposits, all accounts, ~19 h",
     },
     {
       label: "Network",
@@ -66,9 +73,7 @@ export default function StatStrip({
             {t.label}
           </dt>
           <dd
-            className={`mt-1.5 text-lg ${t.warn ? "text-amber-300" : "text-white"} ${
-              t.mono ? "font-mono text-base" : ""
-            }`}
+            className={`mt-1.5 text-lg ${t.warn ? "text-amber-300" : "text-white"}`}
           >
             {t.value}
           </dd>

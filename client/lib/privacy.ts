@@ -1,18 +1,31 @@
 /**
  * Pre-send privacy honesty checks. The pool hides recipients and amounts -
  * but timing and amount correlation against PUBLIC legs can re-link them,
- * and the classic mistakes are mechanical. These checks read only the payer's
- * own public footprint (data anyone can see) and warn before the wallet ever
- * opens. They never block - they make the trade-off a choice.
+ * and the classic mistakes are mechanical. These checks read only public
+ * data (the pool's own events) and warn before the wallet ever opens. They
+ * never block - they make the trade-off a choice.
+ *
+ * Two lenses:
+ *   - Payer side (`findCorrelations`): the sender's OWN public deposits. A
+ *     private transfer or unshield that echoes one re-links the org's leg.
+ *   - Recipient side (`findUnshieldCorrelations`): OTHER accounts' public
+ *     deposits, the pool's current crowd, and the withdrawer's own cadence.
+ *     A recipient who unshields their exact row re-links the run from the
+ *     other end - the failure our own docs admit the payer check cannot see.
  *
  * Matching is deliberately APPROXIMATE (±1% with a floor): a real observer
  * is not defeated by dust-edits, so neither is this check. The check is
  * bounded and says so in the UI: it is not a complete privacy analysis.
  */
 
-import { fetchPublicFootprint, type FootprintEntry } from "./events";
+import {
+  ACTIVITY_LOOKBACK_BLOCKS,
+  fetchPoolActivity,
+  fetchPublicFootprint,
+  type FootprintEntry,
+} from "./events";
 import { getPoolFeeCached, getProvider } from "./pool";
-import { formatTokenAmount } from "./strk20";
+import { formatTokenAmount, sameFelt } from "./strk20";
 
 export interface PrivacyWarning {
   severity: "high" | "medium";
@@ -28,8 +41,24 @@ const CHECK_LOOKBACK_BLOCKS = 40_000;
 const MAX_DEPOSITS_CHECKED = 30;
 const MAX_FEE_MULTIPLES = 10;
 
+/** Recipient-side bounds. Pool-wide there are more deposits and more
+ * divisors, so each is capped to keep the false-positive rate honest. */
+const MAX_POOL_DEPOSITS_CHECKED = 200;
+const MAX_SHARE_WAYS = 8;
+const MAX_SHARE_FEE_MULTIPLES = 3;
+const MAX_ECHO_LINES = 4;
+/** Fewer withdrawals than this across the whole pool in the window means the
+ * crowd is thin enough to say so. */
+export const QUIET_POOL_WITHDRAWALS = 10;
+
 const approxMinutes = (blocks: number) =>
   Math.max(1, Math.round((blocks * 1.7) / 60));
+
+const approxAge = (blocks: number): string => {
+  const min = approxMinutes(blocks);
+  if (min < 90) return `~${min} min ago`;
+  return `~${Math.round(min / 60)} h ago`;
+};
 
 /** ±1% band with a 0.01 STRK floor - observers match approximately; so do we. */
 export function closeTo(a: bigint, b: bigint): boolean {
@@ -120,16 +149,7 @@ export function findCorrelations(opts: {
     }
   }
 
-  // Aggregate duplicates into one line with a count.
-  const counts = new Map<string, { warning: PrivacyWarning; n: number }>();
-  for (const w of raw) {
-    const existing = counts.get(w.message);
-    if (existing) existing.n++;
-    else counts.set(w.message, { warning: w, n: 1 });
-  }
-  const out = [...counts.values()].map(({ warning, n }) =>
-    n > 1 ? { ...warning, message: `${warning.message} (×${n})` } : warning,
-  );
+  const out = aggregate(raw);
   if (toSelf && out.length > 0) {
     out.push({
       severity: "medium",
@@ -140,6 +160,173 @@ export function findCorrelations(opts: {
   return out;
 }
 
+/** Aggregate duplicates into one line with a count. */
+function aggregate(raw: PrivacyWarning[]): PrivacyWarning[] {
+  const counts = new Map<string, { warning: PrivacyWarning; n: number }>();
+  for (const w of raw) {
+    const existing = counts.get(w.message);
+    if (existing) existing.n++;
+    else counts.set(w.message, { warning: w, n: 1 });
+  }
+  return [...counts.values()].map(({ warning, n }) =>
+    n > 1 ? { ...warning, message: `${warning.message} (×${n})` } : warning,
+  );
+}
+
+export interface PoolCrowd {
+  deposits: number;
+  withdrawals: number;
+  lookbackBlocks: number;
+  /** The window's oldest part is missing - counts are a floor, not a total. */
+  truncated: boolean;
+}
+
+/** Pure: how busy the pool was over a scan window. */
+export function summarizePoolActivity(
+  entries: FootprintEntry[],
+  lookbackBlocks: number,
+  truncated: boolean,
+): PoolCrowd {
+  let deposits = 0;
+  let withdrawals = 0;
+  for (const e of entries) {
+    if (e.kind === "deposit") deposits++;
+    else withdrawals++;
+  }
+  return { deposits, withdrawals, lookbackBlocks, truncated };
+}
+
+/**
+ * Recipient-side core - pure and testable. `poolEntries` are every account's
+ * public legs (newest first); `ownEntries` are the withdrawer's own. Only the
+ * amount about to be unshielded is examined; the shielded balance is never
+ * read here.
+ */
+export function findUnshieldCorrelations(opts: {
+  poolEntries: FootprintEntry[];
+  ownEntries: FootprintEntry[];
+  selfAddress: string;
+  currentBlock: number;
+  amount: bigint;
+  poolFee: bigint | null;
+  poolTruncated: boolean;
+}): PrivacyWarning[] {
+  const { poolEntries, ownEntries, selfAddress, currentBlock, amount, poolFee, poolTruncated } =
+    opts;
+  const out: PrivacyWarning[] = [];
+  const fmt = formatTokenAmount;
+
+  // Other accounts' deposits only - the withdrawer's own are the payer
+  // lens's job, and double-reporting them would drown the new signal.
+  const others = poolEntries
+    .filter((e) => e.kind === "deposit" && !sameFelt(e.account, selfAddress))
+    .slice(0, MAX_POOL_DEPOSITS_CHECKED);
+
+  const ageOf = (e: FootprintEntry) =>
+    e.blockNumber === null ? 0 : Math.max(0, currentBlock - e.blockNumber);
+  const isRecent = (e: FootprintEntry) => ageOf(e) <= RECENT_BLOCKS;
+
+  type Echo = { deposit: FootprintEntry; how: string };
+  const direct: Echo[] = [];
+  const shares: { deposit: FootprintEntry; n: number; k: number }[] = [];
+
+  for (const d of others) {
+    if (closeTo(amount, d.amount)) {
+      direct.push({ deposit: d, how: "" });
+      continue;
+    }
+    let matched = false;
+    if (poolFee !== null && poolFee > 0n) {
+      for (let k = 1n; k <= MAX_FEE_MULTIPLES; k++) {
+        const target = d.amount - k * poolFee;
+        if (target <= 0n) break;
+        if (closeTo(amount, target)) {
+          direct.push({
+            deposit: d,
+            how: k === 1n ? " minus the pool fee" : ` minus ${k}× the pool fee`,
+          });
+          matched = true;
+          break;
+        }
+      }
+    }
+    if (matched) continue;
+    // Equal-share tell: 1/n of a deposit net of a few fees. The most specific
+    // (smallest n) match wins so one deposit yields one line.
+    const feeSteps = poolFee !== null && poolFee > 0n ? MAX_SHARE_FEE_MULTIPLES : 0;
+    share: for (let n = 2n; n <= BigInt(MAX_SHARE_WAYS); n++) {
+      for (let k = 0n; k <= BigInt(feeSteps); k++) {
+        const net = d.amount - k * (poolFee ?? 0n);
+        if (net <= 0n) break;
+        if (closeTo(amount, net / n)) {
+          shares.push({ deposit: d, n: Number(n), k: Number(k) });
+          break share;
+        }
+      }
+    }
+  }
+
+  // Direct echoes: one line each, capped, recency drives severity.
+  const shown = direct.slice(0, MAX_ECHO_LINES);
+  for (const { deposit, how } of shown) {
+    out.push({
+      severity: isRecent(deposit) ? "high" : "medium",
+      message: `${fmt(amount)} STRK ≈ a public deposit of ${fmt(deposit.amount)} STRK by another account ${approxAge(ageOf(deposit))}${how} - an observer pairing that deposit with this withdrawal needs nothing else.`,
+    });
+  }
+  if (direct.length > shown.length) {
+    out.push({
+      severity: "medium",
+      message: `${direct.length - shown.length} more public deposit${direct.length - shown.length === 1 ? "" : "s"} by other accounts in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h also ≈ ${fmt(amount)} STRK.`,
+    });
+  }
+
+  // Share matches: one aggregated line, led by the most specific match.
+  if (shares.length > 0) {
+    shares.sort((a, b) => a.n - b.n || ageOf(a.deposit) - ageOf(b.deposit));
+    const lead = shares[0];
+    const rest = shares.length - 1;
+    const net = lead.k === 0 ? "" : lead.k === 1 ? ", net of one fee" : `, net of ${lead.k} fees`;
+    out.push({
+      severity: isRecent(lead.deposit) ? "high" : "medium",
+      message: `${fmt(amount)} STRK ≈ an equal 1/${lead.n} share of a ${fmt(lead.deposit.amount)} STRK public deposit by another account ${approxAge(ageOf(lead.deposit))}${net}${rest > 0 ? ` (and ${rest} other split-shaped match${rest === 1 ? "" : "es"})` : ""} - recipients of a split who each unshield their exact row re-link the run from the other end.`,
+    });
+  }
+
+  // Own cadence: repeated equal withdrawals read as a payroll rhythm.
+  const priorSame = ownEntries.filter(
+    (e) => e.kind === "withdrawal" && closeTo(amount, e.amount),
+  ).length;
+  if (priorSame > 0) {
+    out.push({
+      severity: "medium",
+      message: `You have unshielded ≈ ${fmt(amount)} STRK before (×${priorSame}). Repeated equal withdrawals form a recognisable cadence - different sizes at irregular times break it; dust changes do not.`,
+    });
+  }
+
+  // Crowd. Only when the window is complete - a floor is not a count.
+  if (!poolTruncated) {
+    const withdrawals = poolEntries.filter((e) => e.kind === "withdrawal").length;
+    if (withdrawals < QUIET_POOL_WITHDRAWALS) {
+      out.push({
+        severity: "medium",
+        message:
+          withdrawals === 0
+            ? `The pool is quiet - no withdrawals by anyone in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h. Yours would stand alone; a busier period gives it a crowd.`
+            : `The pool is quiet - only ${withdrawals} withdrawal${withdrawals === 1 ? "" : "s"} by anyone in the last ~${Math.round((ACTIVITY_LOOKBACK_BLOCKS * 1.7) / 3600)} h. Yours would be one of ${withdrawals + 1}; a busier period deepens the crowd.`,
+      });
+    }
+  } else {
+    out.push({
+      severity: "medium",
+      message:
+        "The pool-wide scan was incomplete - other accounts' matching deposits may exist that this check did not see.",
+    });
+  }
+
+  return aggregate(out);
+}
+
 /** Chain-backed assessment. Degraded inputs surface as warnings - a check
  * that silently skipped its own coverage would be a false clean bill. */
 export async function assessPrivacy(
@@ -148,10 +335,14 @@ export async function assessPrivacy(
   kind: "transfer" | "withdraw",
   options?: { toSelf?: boolean },
 ): Promise<PrivacyWarning[]> {
-  const [footprint, currentBlock, poolFee] = await Promise.all([
+  const wantsPool = kind === "withdraw";
+  const [footprint, currentBlock, poolFee, pool] = await Promise.all([
     fetchPublicFootprint(address, { maxLookbackBlocks: CHECK_LOOKBACK_BLOCKS }),
     getProvider().getBlockNumber(),
     getPoolFeeCached().catch(() => null),
+    wantsPool
+      ? fetchPoolActivity({ maxLookbackBlocks: CHECK_LOOKBACK_BLOCKS }).catch(() => null)
+      : Promise.resolve(null),
   ]);
   const warnings = findCorrelations({
     entries: footprint.entries,
@@ -161,6 +352,29 @@ export async function assessPrivacy(
     kind,
     toSelf: options?.toSelf,
   });
+  if (wantsPool) {
+    if (pool === null) {
+      warnings.push({
+        severity: "medium",
+        message:
+          "The pool-wide check could not run (RPC) - other accounts' deposits and the pool's crowd were not examined.",
+      });
+    } else {
+      for (const amount of amounts) {
+        warnings.push(
+          ...findUnshieldCorrelations({
+            poolEntries: pool.entries,
+            ownEntries: footprint.entries,
+            selfAddress: address,
+            currentBlock,
+            amount,
+            poolFee,
+            poolTruncated: pool.truncated,
+          }),
+        );
+      }
+    }
+  }
   if (footprint.truncated || footprint.skipped > 0) {
     warnings.push({
       severity: "medium",
@@ -175,4 +389,10 @@ export async function assessPrivacy(
     });
   }
   return warnings.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "high" ? -1 : 1));
+}
+
+/** Pool crowd for display - the same scan the unshield check uses. */
+export async function fetchPoolCrowd(): Promise<PoolCrowd> {
+  const scan = await fetchPoolActivity({ maxLookbackBlocks: ACTIVITY_LOOKBACK_BLOCKS });
+  return summarizePoolActivity(scan.entries, ACTIVITY_LOOKBACK_BLOCKS, scan.truncated);
 }
